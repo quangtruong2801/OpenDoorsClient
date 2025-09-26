@@ -17,7 +17,6 @@ export default function HeaderBar({
         icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         onClick={() => setCollapsed(!collapsed)}
       />
-      <h1 className="text-xl font-semibold m-2 text ">^^</h1>
     </Header>
   );
 }
