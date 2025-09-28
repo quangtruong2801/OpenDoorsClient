@@ -7,4 +7,5 @@ export type Member = {
   type: string;
   jobType: string;
   team: string;
+  teamId: string;
 };

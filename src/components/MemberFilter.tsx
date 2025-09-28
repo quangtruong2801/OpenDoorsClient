@@ -7,7 +7,7 @@ interface MemberFilterProps {
   search: string;
   type: string;
   jobType: string;
-  team: string;
+  teamId: string;
   teamList: Management[];
   onSearchChange: (v: string) => void;
   onTypeChange: (v: string) => void;
@@ -19,7 +19,7 @@ export default function MemberFilter({
   search,
   type,
   jobType,
-  team,
+  teamId,
   teamList,
   onSearchChange,
   onTypeChange,
@@ -27,15 +27,12 @@ export default function MemberFilter({
   onTeamChange,
 }: MemberFilterProps) {
   return (
-    <Space
-      size="middle"
-      className="flex flex-wrap w-full gap-4" // 📌 cho phép xuống dòng và chiếm toàn chiều rộng
-    >
+    <Space size="middle" className="flex flex-wrap w-full gap-4">
       <Input
         placeholder="Search..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="flex-1 min-w-[180px]" // 📌 co giãn linh hoạt, có giới hạn tối thiểu
+        className="flex-1 min-w-[180px]"
       />
 
       <Select
@@ -62,13 +59,13 @@ export default function MemberFilter({
 
       <Select
         placeholder="Select Team"
-        value={team || undefined}
+        value={teamId || undefined}
         onChange={onTeamChange}
         allowClear
         className="flex-1 min-w-[180px]"
       >
         {teamList.map((t) => (
-          <Option key={t.id} value={t.teamName}>
+          <Option key={t.id} value={t.id}>
             {t.teamName}
           </Option>
         ))}

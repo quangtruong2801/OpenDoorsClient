@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Table, Space, Button, Popconfirm, message, Form } from "antd";
+import { useState, useEffect, useMemo } from "react";
+import { Table, Space, Button, Popconfirm, message } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 
@@ -21,95 +21,111 @@ export default function TeamMember() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form] = Form.useForm();
   const [teamList, setTeamList] = useState<Management[]>([]);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
+  // Fetch danh sách team
   const fetchTeamList = async () => {
-    const mockTeams: Management[] = Array.from({ length: 10 }, (_, i) => ({
-      id: (i + 1).toString(),
-      teamName: `Team ${i + 1}`,
-      members: Math.floor(Math.random() * 10) + 1,
-      createdDate: `2023-0${(i % 9) + 1}-15`,
-    }));
-    setTeamList(mockTeams);
+    try {
+      const res = await fetch("http://localhost:5000/api/teams");
+      const result = await res.json();
+      setTeamList(result);
+    } catch (err) {
+      console.error("❌ Lỗi fetch team:", err);
+    }
   };
 
-  const allData: Member[] = Array.from({ length: 50 }, (_, i) => ({
-    id: (i + 1).toString(),
-    avatar: `https://i.pravatar.cc/150?img=${(i % 10) + 1}`,
-    name: `User ${i + 1}`,
-    email: `user${i + 1}@example.com`,
-    startDate: `2023-${String((i % 12) + 1).padStart(2, "0")}-15`,
-    type: i % 2 === 0 ? "fulltime" : "parttime",
-    jobType: i % 2 === 0 ? "dev" : "design",
-    team: `Team ${(i % 10) + 1}`,
-  }));
-
-  const fetchData = () => {
+  // Fetch toàn bộ member
+  const fetchMembers = async () => {
     setLoading(true);
-    setTimeout(() => {
-      let filtered = allData;
-      if (search)
-        filtered = filtered.filter((d) =>
-          d.name.toLowerCase().includes(search.toLowerCase())
-        );
-      if (type) filtered = filtered.filter((d) => d.type === type);
-      if (jobType) filtered = filtered.filter((d) => d.jobType === jobType);
-      if (team) filtered = filtered.filter((d) => d.team === team);
-
-      setTotal(filtered.length);
-      const start = (page - 1) * pageSize;
-      setData(filtered.slice(start, start + pageSize));
+    try {
+      const res = await fetch("http://localhost:5000/api/members");
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const result: Member[] = await res.json();
+      setData(result);
+    } catch (err) {
+      console.error("❌ Lỗi fetch members:", err);
+    } finally {
       setLoading(false);
-    }, 200);
+    }
   };
 
   useEffect(() => {
     fetchTeamList();
+    fetchMembers();
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [searchParams, page, pageSize]);
+  // ✅ Filter client-side: search, type, jobType, team
+  const filteredData = useMemo(() => {
+    return data.filter((member) => {
+      const matchesSearch = member.name.toLowerCase().includes(search.toLowerCase());
+      const matchesType = type ? member.type === type : true;
+      const matchesJobType = jobType ? member.jobType === jobType : true;
+      const matchesTeam = team
+        ? teamList.find((t) => t.id === team)?.teamName === member.team
+        : true;
 
-  const handleSearchChange = (v: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      search: v,
+      return matchesSearch && matchesType && matchesJobType && matchesTeam;
     });
+  }, [data, search, type, jobType, team, teamList]);
+
+  useEffect(() => {
+    setTotal(filteredData.length);
+  }, [filteredData]);
+
+  // Handlers filter
+  const handleSearchChange = (v: string) =>
+    setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: v });
   const handleTypeChange = (v: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), type: v });
   const handleJobTypeChange = (v: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      jobType: v,
-    });
+    setSearchParams({ ...Object.fromEntries(searchParams.entries()), jobType: v });
   const handleTeamChange = (v: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), team: v });
 
+  // Edit
   const handleEdit = (record: Member) =>
     message.info(`✏️ Sửa thông tin: ${record.name}`);
-  const handleDelete = (id: string) =>
-    setData((prev) => prev.filter((d) => d.id !== id));
-  const handleAddMember = () => {
-    form.validateFields().then((values) => {
-      const newMember: Member = {
-        id: (Math.random() * 100000).toFixed(0),
-        avatar: `https://i.pravatar.cc/150?u=${values.email}`,
-        name: values.name,
-        email: values.email,
-        startDate: new Date().toISOString().split("T")[0],
-        type: values.type,
-        jobType: values.jobType,
-        team: values.team,
-      };
-      setData((prev) => [newMember, ...prev]);
-      setIsModalOpen(false);
-      form.resetFields();
-      message.success("✅ Thêm thành viên thành công!");
-    });
+
+  // Delete
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/members/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        message.success("🗑️ Xóa thành viên thành công!");
+        fetchMembers();
+      } else {
+        message.error("❌ Xóa thất bại!");
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("❌ Có lỗi khi xóa!");
+    }
+  };
+
+  // Add member
+  const handleAddMember = async (newMember: Omit<Member, "id">) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMember),
+      });
+      if (res.ok) {
+        message.success("✅ Thêm thành viên thành công!");
+        setIsModalOpen(false);
+        await fetchMembers();
+      } else {
+        const errorText = await res.text();
+        message.error(`❌ Thêm thất bại: ${errorText}`);
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("❌ Có lỗi xảy ra khi thêm thành viên!");
+    }
   };
 
   const columns = [
@@ -119,11 +135,7 @@ export default function TeamMember() {
       key: "name",
       render: (_: string, record: Member) => (
         <Space>
-          <img
-            src={record.avatar}
-            className="w-8 h-8 rounded-full"
-            alt={record.name}
-          />
+          <img src={record.avatar} className="w-8 h-8 rounded-full" alt={record.name} />
           {record.name}
         </Space>
       ),
@@ -149,10 +161,7 @@ export default function TeamMember() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined className="text-red-500" />}
-            />
+            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
           </Popconfirm>
         </Space>
       ),
@@ -167,7 +176,7 @@ export default function TeamMember() {
             search={search}
             type={type}
             jobType={jobType}
-            team={team}
+            teamId={team}
             teamList={teamList}
             onSearchChange={handleSearchChange}
             onTypeChange={handleTypeChange}
@@ -188,7 +197,7 @@ export default function TeamMember() {
 
       <Table
         columns={columns}
-        dataSource={data}
+        dataSource={filteredData}
         rowKey="id"
         loading={loading}
         scroll={{ y: 400 }}
