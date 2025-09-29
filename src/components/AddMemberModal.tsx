@@ -1,6 +1,7 @@
 import { Modal, Form, Input, Select, DatePicker } from "antd";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import { API_BASE_URL } from "../api/config";
 
 const { Option } = Select;
 
@@ -26,7 +27,7 @@ export default function AddMemberModal({ open, onCancel, onSubmit }: AddMemberMo
   const [teams, setTeams] = useState<{ id: string; teamName: string }[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/teams")
+    fetch(`${API_BASE_URL}/teams`)
       .then(res => res.json())
       .then(data => setTeams(data))
       .catch(err => console.error("❌ Lỗi tải danh sách team:", err));
@@ -41,7 +42,7 @@ export default function AddMemberModal({ open, onCancel, onSubmit }: AddMemberMo
         team: teamObj?.teamName || "",
         startDate: dayjs(values.startDate).format("YYYY-MM-DD"),
       };
-      onSubmit(payload); // ✅ gửi data lên TeamMember
+      onSubmit(payload); // gửi data lên TeamMember
       form.resetFields();
     } catch {
       // validate fail
@@ -82,14 +83,14 @@ export default function AddMemberModal({ open, onCancel, onSubmit }: AddMemberMo
         </Form.Item>
 
         <Form.Item name="type" label="Hình thức" rules={[{ required: true }]}>
-          <Select>
+          <Select placeholder="Chọn hình thức">
             <Option value="fulltime">Full Time</Option>
             <Option value="parttime">Part Time</Option>
           </Select>
         </Form.Item>
 
         <Form.Item name="jobType" label="Loại công việc" rules={[{ required: true }]}>
-          <Select>
+          <Select placeholder="Chọn loại công việc">
             <Option value="dev">Developer</Option>
             <Option value="design">Designer</Option>
           </Select>

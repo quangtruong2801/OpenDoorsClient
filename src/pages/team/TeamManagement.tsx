@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Table, Button, message } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { Table, Button, message, Space, Popconfirm } from "antd";
+import { EditOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 
+import { API_BASE_URL } from "../../api/config";
 import AddTeamModal from "../../components/AddTeamModal";
 import TeamFilter from "../../components/TeamManagementFilter"; // đảm bảo TeamFilter đã bỏ dateFilter
 import type { Management } from "../../types/Management";
@@ -24,7 +25,7 @@ export default function TeamManagement() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/teams");
+      const res = await fetch(`${API_BASE_URL}/teams`);
       if (!res.ok) throw new Error("Failed to fetch teams");
 
       const result: Management[] = await res.json();
@@ -59,7 +60,7 @@ export default function TeamManagement() {
   // Thêm team mới
   const handleAddTeam = async (values: { teamName: string }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/teams", {
+      const res = await fetch(`${API_BASE_URL}/teams`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -76,6 +77,28 @@ export default function TeamManagement() {
     }
   };
 
+  // Edit
+    const handleEdit = (record: Management) =>
+      message.info(`✏️ Sửa thông tin: ${record.teamName}`);
+  
+    // Delete
+    const handleDelete = async (id: string) => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/teams/${id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          message.success("🗑️ Xóa thành công!");
+          fetchData();
+        } else {
+          message.error("❌ Xóa thất bại!");
+        }
+      } catch (err) {
+        console.error(err);
+        message.error("❌ Có lỗi khi xóa!");
+      }
+    };
+
   const handleSearchChange = (v: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: v });
   const handleMemberFilterChange = (v: string) =>
@@ -85,6 +108,27 @@ export default function TeamManagement() {
     { title: "Team Name", dataIndex: "teamName", key: "teamName" },
     { title: "Members", dataIndex: "members", key: "members" },
     // { title: "Created Date", dataIndex: "createdDate", key: "createdDate" },
+    {
+      title: "Action",
+      key: "action",
+      render: (_: string, record: Management) => (
+        <Space size="middle">
+          <Button
+            type="text"
+            icon={<EditOutlined className="text-blue-600" />}
+            onClick={() => handleEdit(record)}
+          />
+          <Popconfirm
+            title="Xóa thành viên này?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ];
 
   return (

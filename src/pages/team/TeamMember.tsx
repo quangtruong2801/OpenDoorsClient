@@ -3,6 +3,7 @@ import { Table, Space, Button, Popconfirm, message } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 
+import { API_BASE_URL } from "../../api/config";
 import AddMemberModal from "../../components/AddMemberModal";
 import MemberFilter from "../../components/MemberFilter";
 import type { Member } from "../../types/Member";
@@ -28,7 +29,7 @@ export default function TeamMember() {
   // Fetch danh sách team
   const fetchTeamList = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/teams");
+      const res = await fetch(`${API_BASE_URL}/teams`);
       const result = await res.json();
       setTeamList(result);
     } catch (err) {
@@ -40,7 +41,7 @@ export default function TeamMember() {
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/members");
+      const res = await fetch(`${API_BASE_URL}/members`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const result: Member[] = await res.json();
       setData(result);
@@ -91,7 +92,7 @@ export default function TeamMember() {
   // Delete
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/members/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/members/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -109,7 +110,7 @@ export default function TeamMember() {
   // Add member
   const handleAddMember = async (newMember: Omit<Member, "id">) => {
     try {
-      const res = await fetch("http://localhost:5000/api/members", {
+      const res = await fetch(`${API_BASE_URL}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newMember),

@@ -22,6 +22,10 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
           key: "/team/management",
           label: <Link to="/team/management">Team Management</Link>,
         },
+        {
+          key: "/job/management",
+          label: <Link to="/job/management">Job Management</Link>,
+        },
       ],
     },
     {
