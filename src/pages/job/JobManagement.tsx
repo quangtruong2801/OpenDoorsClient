@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Table, Button, message, Space, Popconfirm, Input } from "antd";
 import {
   EditOutlined,
@@ -6,6 +6,7 @@ import {
   DeleteOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
+import type { ColumnsType } from "antd/es/table";
 
 import { API_BASE_URL } from "../../api/config";
 import type { Job } from "../../types/Job";
@@ -15,14 +16,15 @@ export default function JobManagement() {
   const [data, setData] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  const fetchJobs = async () => {
+  // Lấy danh sách công việc
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/jobs`);
@@ -30,7 +32,6 @@ export default function JobManagement() {
 
       const result: Job[] = await res.json();
 
-      // Lọc theo từ khóa
       const filtered = result.filter((j) =>
         j.jobName.toLowerCase().includes(search.toLowerCase())
       );
@@ -43,85 +44,111 @@ export default function JobManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, page, pageSize]);
 
   useEffect(() => {
     fetchJobs();
-  }, [search, page, pageSize]);
+  }, [fetchJobs]);
 
   // Thêm Job mới
-  const handleAddJob = async (values: Omit<Job, "jobId">) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/jobs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
+  const handleAddJob = useCallback(
+    async (values: Omit<Job, "jobId">) => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/jobs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        });
+        if (!res.ok) throw new Error("Failed to create job");
 
-      if (!res.ok) throw new Error("Failed to create job");
-
-      message.success("✅ Thêm công việc thành công!");
-      setIsModalOpen(false);
-      fetchJobs();
-    } catch (err) {
-      console.error(err);
-      message.error("❌ Thêm công việc thất bại");
-    }
-  };
+        message.success("✅ Thêm công việc thành công!");
+        setIsModalOpen(false);
+        fetchJobs();
+      } catch (err) {
+        console.error(err);
+        message.error("❌ Thêm công việc thất bại");
+      }
+    },
+    [fetchJobs]
+  );
 
   // Edit
-  const handleEdit = (record: Job) =>
+  const handleEdit = useCallback((record: Job) => {
     message.info(`✏️ Sửa công việc: ${record.jobName}`);
+  }, []);
 
   // Delete
-  const handleDelete = async (jobId: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        message.success("🗑️ Xóa thành công!");
-        fetchJobs();
-      } else {
-        message.error("❌ Xóa thất bại!");
+  const handleDelete = useCallback(
+    async (jobId: string) => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          message.success("🗑️ Xóa thành công!");
+          fetchJobs();
+        } else {
+          message.error("❌ Xóa thất bại!");
+        }
+      } catch (err) {
+        console.error(err);
+        message.error("❌ Có lỗi khi xóa!");
       }
-    } catch (err) {
-      console.error(err);
-      message.error("❌ Có lỗi khi xóa!");
-    }
-  };
+    },
+    [fetchJobs]
+  );
 
-  const columns = [
-    { title: "Tên công việc", dataIndex: "jobName", key: "jobName" },
-    { title: "Hình thức", dataIndex: "jobType", key: "jobType" },
-    { title: "Kỹ năng", dataIndex: "skills", key: "skills" },
-    { title: "Yêu cầu", dataIndex: "requirement", key: "requirement" },
-    { title: "Mô tả", dataIndex: "description", key: "description" },
-    {
-      title: "Hành động",
-      key: "action",
-      render: (_: string, record: Job) => (
-        <Space size="middle">
-          <Button
-            type="text"
-            icon={<EditOutlined className="text-blue-600" />}
-            onClick={() => handleEdit(record)}
-          />
-          <Popconfirm
-            title="Xóa công việc này?"
-            onConfirm={() => handleDelete(record.jobId)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
+  // Columns
+  const columns: ColumnsType<Job> = useMemo(
+    () => [
+      {
+        title: "Tên công việc",
+        dataIndex: "jobName",
+        key: "jobName",
+        width: 180,
+      },
+      { title: "Kỹ năng", dataIndex: "skills", key: "skills", width: 200 },
+      {
+        title: "Yêu cầu",
+        dataIndex: "requirement",
+        key: "requirement",
+        width: 200,
+      },
+      {
+        title: "Mô tả",
+        dataIndex: "description",
+        key: "description",
+        width: 250,
+      },
+      {
+        title: "Hành động",
+        key: "action",
+        width: 120,
+        fixed: "right",
+        render: (_: string, record: Job) => (
+          <Space size="middle">
             <Button
               type="text"
-              icon={<DeleteOutlined className="text-red-500" />}
+              icon={<EditOutlined className="text-blue-600" />}
+              onClick={() => handleEdit(record)}
             />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+            <Popconfirm
+              title="Xóa công việc này?"
+              onConfirm={() => handleDelete(record.jobId)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button
+                type="text"
+                icon={<DeleteOutlined className="text-red-500" />}
+              />
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [handleEdit, handleDelete]
+  );
 
   return (
     <div className="p-4 bg-white rounded shadow">
@@ -150,7 +177,7 @@ export default function JobManagement() {
         dataSource={data}
         rowKey="jobId"
         loading={loading}
-        scroll={{ y: 400 }}
+        scroll={{ x: "max-content", y: 600 }}
         pagination={{
           current: page,
           pageSize,
@@ -167,7 +194,7 @@ export default function JobManagement() {
       <AddJobModal
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
-        onSubmit={(values) => handleAddJob(values as Omit<Job, "jobId">)} // ✅ ép kiểu
+        onSubmit={(values) => handleAddJob(values as Omit<Job, "jobId">)}
       />
     </div>
   );

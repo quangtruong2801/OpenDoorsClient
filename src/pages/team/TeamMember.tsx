@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Table, Space, Button, Popconfirm, message } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
+import type { ColumnsType } from "antd/es/table";
 
 import { API_BASE_URL } from "../../api/config";
 import AddMemberModal from "../../components/AddMemberModal";
@@ -60,7 +61,9 @@ export default function TeamMember() {
   // ✅ Filter client-side: search, type, jobType, team
   const filteredData = useMemo(() => {
     return data.filter((member) => {
-      const matchesSearch = member.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = member.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
       const matchesType = type ? member.type === type : true;
       const matchesJobType = jobType ? member.jobType === jobType : true;
       const matchesTeam = team
@@ -77,11 +80,17 @@ export default function TeamMember() {
 
   // Handlers filter
   const handleSearchChange = (v: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: v });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      search: v,
+    });
   const handleTypeChange = (v: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), type: v });
   const handleJobTypeChange = (v: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), jobType: v });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      jobType: v,
+    });
   const handleTeamChange = (v: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), team: v });
 
@@ -129,26 +138,57 @@ export default function TeamMember() {
     }
   };
 
-  const columns = [
+  const columns: ColumnsType<Member> = [
     {
-      title: "Person",
-      dataIndex: "name",
-      key: "name",
-      render: (_: string, record: Member) => (
-        <Space>
-          <img src={record.avatar} className="w-8 h-8 rounded-full" alt={record.name} />
-          {record.name}
-        </Space>
+      title: "Avatar",
+      dataIndex: "avatar",
+      key: "avatar",
+      width: 80,
+      render: (url: string) => (
+        <img
+          src={url}
+          alt="avatar"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            objectFit: "cover",
+          }}
+        />
       ),
     },
-    { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Start Date", dataIndex: "startDate", key: "startDate" },
-    { title: "Type", dataIndex: "type", key: "type" },
-    { title: "Job Type", dataIndex: "jobType", key: "jobType" },
-    { title: "Team", dataIndex: "team", key: "team" },
+    { title: "Họ và tên", dataIndex: "name", key: "name", width: 180 },
+    { title: "Email", dataIndex: "email", key: "email", width: 200 },
+    { title: "Ngày sinh", dataIndex: "birthday", key: "birthday", width: 150 },
+    { title: "Sở thích", dataIndex: "hobbies", key: "hobbies", width: 200 },
+    {
+      title: "Mạng xã hội",
+      dataIndex: "socials",
+      key: "socials",
+      width: 220,
+      render: (url: string) =>
+        url ? (
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            {url}
+          </a>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      title: "Ngày bắt đầu",
+      dataIndex: "startDate",
+      key: "startDate",
+      width: 150,
+    },
+    { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
+    { title: "Công việc", dataIndex: "jobType", key: "jobType", width: 180 },
+    { title: "Team", dataIndex: "team", key: "team", width: 150 },
     {
       title: "Action",
       key: "action",
+      width: 120,
+      fixed: "right", // ✅ Đúng kiểu
       render: (_: string, record: Member) => (
         <Space size="middle">
           <Button
@@ -162,7 +202,10 @@ export default function TeamMember() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
+            <Button
+              type="text"
+              icon={<DeleteOutlined className="text-red-500" />}
+            />
           </Popconfirm>
         </Space>
       ),
@@ -201,7 +244,7 @@ export default function TeamMember() {
         dataSource={filteredData}
         rowKey="id"
         loading={loading}
-        scroll={{ y: 400 }}
+        scroll={{ x: "max-content", y: 600 }}
         pagination={{
           current: page,
           pageSize,

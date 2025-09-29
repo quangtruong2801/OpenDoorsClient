@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Table, Button, message, Space, Popconfirm } from "antd";
 import { EditOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
+import type { ColumnsType } from "antd/es/table";
 
 import { API_BASE_URL } from "../../api/config";
 import AddTeamModal from "../../components/AddTeamModal";
@@ -22,7 +23,7 @@ export default function TeamManagement() {
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/teams`);
@@ -51,11 +52,12 @@ export default function TeamManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, memberFilter, page, pageSize]);
 
+  // useEffect chỉ phụ thuộc fetchData
   useEffect(() => {
     fetchData();
-  }, [searchParams, page, pageSize]);
+  }, [fetchData]);
 
   // Thêm team mới
   const handleAddTeam = async (values: { teamName: string }) => {
@@ -78,39 +80,47 @@ export default function TeamManagement() {
   };
 
   // Edit
-    const handleEdit = (record: Management) =>
-      message.info(`✏️ Sửa thông tin: ${record.teamName}`);
-  
-    // Delete
-    const handleDelete = async (id: string) => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/teams/${id}`, {
-          method: "DELETE",
-        });
-        if (res.ok) {
-          message.success("🗑️ Xóa thành công!");
-          fetchData();
-        } else {
-          message.error("❌ Xóa thất bại!");
-        }
-      } catch (err) {
-        console.error(err);
-        message.error("❌ Có lỗi khi xóa!");
+  const handleEdit = (record: Management) =>
+    message.info(`✏️ Sửa thông tin: ${record.teamName}`);
+
+  // Delete
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/teams/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        message.success("🗑️ Xóa thành công!");
+        fetchData();
+      } else {
+        message.error("❌ Xóa thất bại!");
       }
-    };
+    } catch (err) {
+      console.error(err);
+      message.error("❌ Có lỗi khi xóa!");
+    }
+  };
 
   const handleSearchChange = (v: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: v });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      search: v,
+    });
   const handleMemberFilterChange = (v: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), memberFilter: v });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      memberFilter: v,
+    });
 
-  const columns = [
-    { title: "Team Name", dataIndex: "teamName", key: "teamName" },
-    { title: "Members", dataIndex: "members", key: "members" },
-    // { title: "Created Date", dataIndex: "createdDate", key: "createdDate" },
+  const columns: ColumnsType<Management> = [
+    { title: "Team Name", dataIndex: "teamName", key: "teamName", width: 200 },
+    { title: "Members", dataIndex: "members", key: "members", width: 150 },
+    // { title: "Created Date", dataIndex: "createdDate", key: "createdDate", width: 150 },
     {
       title: "Action",
       key: "action",
+      width: 120,
+      fixed: "right",
       render: (_: string, record: Management) => (
         <Space size="middle">
           <Button
@@ -119,12 +129,15 @@ export default function TeamManagement() {
             onClick={() => handleEdit(record)}
           />
           <Popconfirm
-            title="Xóa thành viên này?"
+            title="Xóa team này?"
             onConfirm={() => handleDelete(record.id)}
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
+            <Button
+              type="text"
+              icon={<DeleteOutlined className="text-red-500" />}
+            />
           </Popconfirm>
         </Space>
       ),
@@ -156,7 +169,7 @@ export default function TeamManagement() {
         dataSource={data}
         rowKey="id"
         loading={loading}
-        scroll={{ y: 400 }}
+        scroll={{ x: "max-content", y: 600 }}
         pagination={{
           current: page,
           pageSize,

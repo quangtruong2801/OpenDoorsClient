@@ -1,11 +1,9 @@
-import { Modal, Form, Input, /*Select*/ } from "antd";
-
-// const { Option } = Select;
+import { Modal, Form, Input } from "antd";
 
 type AddJobModalProps = {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: Record<string, unknown>) => void; // ✅ không dùng any
+  onSubmit: (values: Record<string, unknown>) => void; 
 };
 
 export default function AddJobModal({ open, onCancel, onSubmit }: AddJobModalProps) {
@@ -14,7 +12,7 @@ export default function AddJobModal({ open, onCancel, onSubmit }: AddJobModalPro
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      onSubmit(values as Record<string, unknown>); // ✅ ép kiểu an toàn
+      onSubmit(values as Record<string, unknown>); 
       form.resetFields();
     } catch {
       // validate fail
@@ -36,10 +34,6 @@ export default function AddJobModal({ open, onCancel, onSubmit }: AddJobModalPro
     >
       <Form layout="vertical" form={form}>
         <Form.Item name="jobName" label="Tên công việc" rules={[{ required: true }]}>
-          <Input placeholder="Nhập tên công việc" />
-        </Form.Item>
-
-        <Form.Item name="jobType" label="Vị trí công việc" rules={[{ required: true }]}>
           <Input placeholder="Nhập tên công việc" />
         </Form.Item>
 
