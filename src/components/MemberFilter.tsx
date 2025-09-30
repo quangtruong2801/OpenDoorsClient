@@ -48,7 +48,7 @@ export default function MemberFilter({
       >
         <Option value="fulltime">Full Time</Option>
         <Option value="parttime">Part Time</Option>
-        <Option value="intern">Intern</Option>
+        <Option value="intern">test</Option>
       </Select>
 
       {/* Job Filter */}
