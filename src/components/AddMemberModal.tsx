@@ -9,10 +9,16 @@ import {
   Row,
   Col,
   message,
+  Upload,
 } from "antd";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import axios from "axios";
 import { API_BASE_URL } from "../api/config";
 import type { NewMember, Social } from "../types/Member";
 import {
@@ -31,6 +37,10 @@ type AddMemberModalProps = {
   onSubmit: (values: NewMember) => void;
 };
 
+// Thông tin Cloudinary:
+const CLOUD_NAME = "dns356lwm";
+const UPLOAD_PRESET = "member_upload";
+
 export default function AddMemberModal({
   open,
   onCancel,
@@ -39,6 +49,8 @@ export default function AddMemberModal({
   const [form] = Form.useForm();
   const [teams, setTeams] = useState<{ id: string; teamName: string }[]>([]);
   const [jobs, setJobs] = useState<{ id: string; jobName: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/teams`)
@@ -51,6 +63,33 @@ export default function AddMemberModal({
       .catch(console.error);
   }, []);
 
+  // Upload ảnh lên Cloudinary
+  const handleAvatarUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("folder", "member_upload");
+
+    setUploading(true);
+    try {
+      const res = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        formData
+      );
+      const url = res.data.secure_url;
+      setAvatarUrl(url);
+      form.setFieldsValue({ avatar: url }); // Gán vào form để submit
+      message.success("Tải ảnh thành công!");
+    } catch (error) {
+      console.error(error);
+      message.error("Tải ảnh thất bại!");
+    } finally {
+      setUploading(false);
+    }
+    return false; //Ngăn Upload tự gửi request mặc định
+  };
+
+  // Submit form
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
@@ -63,6 +102,7 @@ export default function AddMemberModal({
 
       const payload: NewMember = {
         ...values,
+        avatar: avatarUrl, //dùng URL sau khi upload
         team: teamObj?.teamName || "",
         startDate: dayjs(values.startDate).format("YYYY-MM-DD"),
         birthday: dayjs(values.birthday).format("YYYY-MM-DD"),
@@ -77,6 +117,7 @@ export default function AddMemberModal({
 
       onSubmit(payload);
       form.resetFields();
+      setAvatarUrl("");
     } catch (err) {
       console.error("Validate error:", err);
     }
@@ -89,12 +130,13 @@ export default function AddMemberModal({
       onOk={handleOk}
       onCancel={() => {
         form.resetFields();
+        setAvatarUrl("");
         onCancel();
       }}
       destroyOnClose
       okText="Lưu"
       cancelText="Hủy"
-      width={900} // rộng hơn để đủ 2 cột
+      width={900}
     >
       <Form layout="vertical" form={form}>
         <Row gutter={16}>
@@ -103,7 +145,7 @@ export default function AddMemberModal({
             <Form.Item
               name="name"
               label="Họ và tên"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
             >
               <Input placeholder="Nhập họ tên" />
             </Form.Item>
@@ -111,23 +153,54 @@ export default function AddMemberModal({
             <Form.Item
               name="email"
               label="Email"
-              rules={[{ required: true, type: "email" }]}
+              rules={[
+                {
+                  required: true,
+                  type: "email",
+                  message: "Email không hợp lệ",
+                },
+              ]}
             >
               <Input placeholder="Nhập email" />
             </Form.Item>
 
+            {/* Upload Avatar */}
             <Form.Item
               name="avatar"
-              label="Avatar URL"
-              rules={[{ required: true }]}
+              label="Ảnh đại diện"
+              rules={[{ required: true, message: "Vui lòng tải ảnh đại diện" }]}
             >
-              <Input placeholder="https://..." />
+              <Upload
+                accept="image/*"
+                beforeUpload={handleAvatarUpload}
+                showUploadList={false}
+              >
+                <Button icon={<UploadOutlined />} loading={uploading}>
+                  {avatarUrl ? "Thay ảnh" : "Chọn ảnh từ máy"}
+                </Button>
+              </Upload>
+
+              {avatarUrl && (
+                <div style={{ marginTop: 12 }}>
+                  <img
+                    src={avatarUrl}
+                    alt="avatar preview"
+                    style={{
+                      width: 120,
+                      height: 120,
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+              )}
             </Form.Item>
 
             <Form.Item
               name="birthday"
               label="Ngày sinh"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: "Chọn ngày sinh" }]}
             >
               <DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
             </Form.Item>
@@ -135,7 +208,7 @@ export default function AddMemberModal({
             <Form.Item
               name="hobbies"
               label="Sở thích"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: "Vui lòng nhập sở thích" }]}
             >
               <Input.TextArea placeholder="Nhập sở thích cá nhân" rows={2} />
             </Form.Item>
@@ -143,7 +216,7 @@ export default function AddMemberModal({
 
           {/* Cột 2 */}
           <Col span={12}>
-            {/* Socials */}
+            {/* Mạng xã hội */}
             <Form.Item label="Mạng xã hội" required>
               <Form.List name="socials">
                 {(fields, { add, remove }) => (
@@ -160,7 +233,7 @@ export default function AddMemberModal({
                           rules={[{ required: true, message: "Chọn nền tảng" }]}
                           style={{ marginBottom: 0 }}
                         >
-                          <Select
+                           <Select
                             placeholder="Chọn nền tảng"
                             style={{ width: 150 }}
                           >
