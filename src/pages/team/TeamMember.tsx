@@ -1,8 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { Table, Space, Button, Popconfirm, message } from "antd";
+import { Table, Space, Button, Popconfirm, message, Tag } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
+import {
+  FaFacebook,
+  FaLinkedin,
+  FaTwitter,
+  FaInstagram,
+  FaTiktok,
+} from "react-icons/fa";
 
 import { API_BASE_URL } from "../../api/config";
 import AddMemberModal from "../../components/AddMemberModal";
@@ -26,6 +33,16 @@ export default function TeamMember() {
   const [teamList, setTeamList] = useState<Management[]>([]);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
+
+  const [jobList, setJobList] = useState<{ id: string; jobName: string }[]>([]);
+
+  useEffect(() => {
+    // Fetch jobs
+    fetch(`${API_BASE_URL}/jobs`)
+      .then((res) => res.json())
+      .then(setJobList)
+      .catch(console.error);
+  }, []);
 
   // Fetch danh sách team
   const fetchTeamList = async () => {
@@ -58,14 +75,14 @@ export default function TeamMember() {
     fetchMembers();
   }, []);
 
-  // ✅ Filter client-side: search, type, jobType, team
+  // Filter client-side
   const filteredData = useMemo(() => {
     return data.filter((member) => {
       const matchesSearch = member.name
         .toLowerCase()
         .includes(search.toLowerCase());
       const matchesType = type ? member.type === type : true;
-      const matchesJobType = jobType ? member.jobType === jobType : true;
+      const matchesJobType = jobType ? member.jobType.includes(jobType) : true;
       const matchesTeam = team
         ? teamList.find((t) => t.id === team)?.teamName === member.team
         : true;
@@ -84,15 +101,23 @@ export default function TeamMember() {
       ...Object.fromEntries(searchParams.entries()),
       search: v,
     });
-  const handleTypeChange = (v: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), type: v });
-  const handleJobTypeChange = (v: string) =>
+  const handleTypeChange = (v: string | undefined) =>
     setSearchParams({
       ...Object.fromEntries(searchParams.entries()),
-      jobType: v,
+      type: v || "", // nếu clear thì set về ""
     });
-  const handleTeamChange = (v: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), team: v });
+
+  const handleJobTypeChange = (v: string | undefined) =>
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      jobType: v || "",
+    });
+
+  const handleTeamChange = (v: string | undefined) =>
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      team: v || "",
+    });
 
   // Edit
   const handleEdit = (record: Member) =>
@@ -166,11 +191,54 @@ export default function TeamMember() {
       dataIndex: "socials",
       key: "socials",
       width: 220,
-      render: (url: string) =>
-        url ? (
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            {url}
-          </a>
+      render: (socials: { platform: string; url: string }[]) =>
+        socials && socials.length > 0 ? (
+          <Space direction="vertical">
+            {socials.map((s, idx) => {
+              let IconComponent;
+              let color = "#000"; // default
+
+              switch (s.platform) {
+                case "LinkedIn":
+                  IconComponent = FaLinkedin;
+                  color = "#0077B5";
+                  break;
+                case "Facebook":
+                  IconComponent = FaFacebook;
+                  color = "#1877F2";
+                  break;
+                case "Twitter":
+                  IconComponent = FaTwitter;
+                  color = "#1DA1F2";
+                  break;
+                case "Instagram":
+                  IconComponent = FaInstagram;
+                  color = "#C13584";
+                  break;
+                case "TikTok":
+                  IconComponent = FaTiktok;
+                  color = "#000000";
+                  break;
+                default:
+                  IconComponent = null;
+              }
+
+              return (
+                <a
+                  key={idx}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1"
+                >
+                  {IconComponent && (
+                    <IconComponent style={{ color, fontSize: 16 }} />
+                  )}
+                  <span>{s.url}</span>
+                </a>
+              );
+            })}
+          </Space>
         ) : (
           "—"
         ),
@@ -182,13 +250,24 @@ export default function TeamMember() {
       width: 150,
     },
     { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
-    { title: "Công việc", dataIndex: "jobType", key: "jobType", width: 180 },
+    {
+      title: "Công việc",
+      dataIndex: "jobType",
+      key: "jobType",
+      width: 180,
+      render: (jobs: string[]) =>
+        jobs?.map((job, idx) => (
+          <Tag color="blue" key={idx}>
+            {job}
+          </Tag>
+        )) || "—",
+    },
     { title: "Team", dataIndex: "team", key: "team", width: 150 },
     {
       title: "Action",
       key: "action",
       width: 120,
-      fixed: "right", // ✅ Đúng kiểu
+      fixed: "right",
       render: (_: string, record: Member) => (
         <Space size="middle">
           <Button
@@ -221,6 +300,7 @@ export default function TeamMember() {
             type={type}
             jobType={jobType}
             teamId={team}
+            jobList={jobList}
             teamList={teamList}
             onSearchChange={handleSearchChange}
             onTypeChange={handleTypeChange}

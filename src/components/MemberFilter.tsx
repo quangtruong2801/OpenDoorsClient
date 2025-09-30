@@ -8,6 +8,7 @@ interface MemberFilterProps {
   type: string;
   jobType: string;
   teamId: string;
+  jobList: { id: string; jobName: string }[];
   teamList: Management[];
   onSearchChange: (v: string) => void;
   onTypeChange: (v: string) => void;
@@ -20,6 +21,7 @@ export default function MemberFilter({
   type,
   jobType,
   teamId,
+  jobList,
   teamList,
   onSearchChange,
   onTypeChange,
@@ -28,6 +30,7 @@ export default function MemberFilter({
 }: MemberFilterProps) {
   return (
     <Space size="middle" className="flex flex-wrap w-full gap-4">
+      {/* Search */}
       <Input
         placeholder="Search..."
         value={search}
@@ -35,6 +38,7 @@ export default function MemberFilter({
         className="flex-1 min-w-[180px]"
       />
 
+      {/* Type Filter */}
       <Select
         placeholder="Select Type"
         value={type || undefined}
@@ -44,8 +48,10 @@ export default function MemberFilter({
       >
         <Option value="fulltime">Full Time</Option>
         <Option value="parttime">Part Time</Option>
+        <Option value="intern">Intern</Option>
       </Select>
 
+      {/* Job Filter */}
       <Select
         placeholder="Select Job Type"
         value={jobType || undefined}
@@ -53,10 +59,14 @@ export default function MemberFilter({
         allowClear
         className="flex-1 min-w-[150px]"
       >
-        <Option value="dev">Developer</Option>
-        <Option value="design">Designer</Option>
+        {jobList.map((j) => (
+          <Option key={j.id} value={j.jobName}>
+            {j.jobName}
+          </Option>
+        ))}
       </Select>
 
+      {/* Team Filter */}
       <Select
         placeholder="Select Team"
         value={teamId || undefined}
