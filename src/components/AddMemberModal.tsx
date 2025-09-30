@@ -104,8 +104,8 @@ export default function AddMemberModal({
         ...values,
         avatar: avatarUrl, //dùng URL sau khi upload
         team: teamObj?.teamName || "",
-        startDate: dayjs(values.startDate).format("YYYY-MM-DD"),
-        birthday: dayjs(values.birthday).format("YYYY-MM-DD"),
+        startDate: dayjs(values.startDate).format("DD-MM-YYYY"),
+        birthday: dayjs(values.birthday).format("DD-MM-YYYY"),
         jobType: Array.isArray(values.jobType)
           ? values.jobType
           : [values.jobType],

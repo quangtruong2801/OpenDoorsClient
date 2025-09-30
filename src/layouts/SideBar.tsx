@@ -1,5 +1,5 @@
 import { Menu } from "antd";
-import { TeamOutlined, HomeOutlined, SettingOutlined } from "@ant-design/icons";
+import { TeamOutlined, HomeOutlined, SettingOutlined, SolutionOutlined } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import openIcon from "../assets/logoVNTT1.png";
 import closeIcon from "../assets/logoVNTT2.png";
@@ -8,7 +8,11 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
   const location = useLocation();
 
   const items = [
-    { key: "/", icon: <HomeOutlined />, label: <Link to="/">Trang chủ</Link> },
+    {
+      key: "/",
+      icon: <HomeOutlined />,
+      label: <Link to="/">Trang chủ</Link>,
+    },
     {
       key: "team",
       icon: <TeamOutlined />,
@@ -22,8 +26,15 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
           key: "/team/management",
           label: <Link to="/team/management">Team Management</Link>,
         },
+      ],
+    },
+    {
+      key: "job",
+      icon: <SolutionOutlined />,
+      label: "Job",
+      children: [
         {
-          key: "/job/management",
+          key: "/job",
           label: <Link to="/job/management">Job Management</Link>,
         },
       ],
