@@ -37,10 +37,6 @@ type AddMemberModalProps = {
   onSubmit: (values: NewMember) => void;
 };
 
-// Thông tin Cloudinary:
-const CLOUD_NAME = "dns356lwm";
-const UPLOAD_PRESET = "member_upload";
-
 export default function AddMemberModal({
   open,
   onCancel,
@@ -67,18 +63,20 @@ export default function AddMemberModal({
   const handleAvatarUpload = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
-    formData.append("folder", "member_upload");
 
     setUploading(true);
     try {
-      const res = await axios.post(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        formData
-      );
-      const url = res.data.secure_url;
+      const res = await axios.post(`${API_BASE_URL}/Upload/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // Lấy cả URL và publicId
+      const { url, publicId } = res.data;
+
       setAvatarUrl(url);
-      form.setFieldsValue({ avatar: url }); // Gán vào form để submit
+      // Lưu cả URL và publicId vào form
+      form.setFieldsValue({ avatar: url, avatarPublicId: publicId });
+
       message.success("Tải ảnh thành công!");
     } catch (error) {
       console.error(error);
@@ -86,13 +84,15 @@ export default function AddMemberModal({
     } finally {
       setUploading(false);
     }
-    return false; //Ngăn Upload tự gửi request mặc định
+
+    return false; // Ngăn Upload tự gửi request mặc định
   };
 
   // Submit form
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
+
       if (!values.socials || values.socials.length === 0) {
         message.error("Bạn phải nhập ít nhất 1 mạng xã hội!");
         return;
@@ -102,7 +102,8 @@ export default function AddMemberModal({
 
       const payload: NewMember = {
         ...values,
-        avatar: avatarUrl, //dùng URL sau khi upload
+        avatar: avatarUrl, // URL ảnh
+        avatarPublicId: form.getFieldValue("avatarPublicId"), // publicId Cloudinary
         team: teamObj?.teamName || "",
         startDate: dayjs(values.startDate).format("DD-MM-YYYY"),
         birthday: dayjs(values.birthday).format("DD-MM-YYYY"),
@@ -233,7 +234,7 @@ export default function AddMemberModal({
                           rules={[{ required: true, message: "Chọn nền tảng" }]}
                           style={{ marginBottom: 0 }}
                         >
-                           <Select
+                          <Select
                             placeholder="Chọn nền tảng"
                             style={{ width: 150 }}
                           >

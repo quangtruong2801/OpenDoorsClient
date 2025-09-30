@@ -1,6 +1,7 @@
 export type Member = {
   id: string;
   avatar: string;
+  avatarPublicId: string;
   name: string;
   birthday: string;
   email: string;
