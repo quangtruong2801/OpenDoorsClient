@@ -28,7 +28,7 @@ export default function AddJobModal({ open, onCancel, onSubmit }: AddJobModalPro
         form.resetFields();
         onCancel();
       }}
-      destroyOnClose
+      destroyOnHidden
       okText="Lưu"
       cancelText="Hủy"
     >

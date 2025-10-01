@@ -4,7 +4,6 @@ import {
   Input,
   Select,
   DatePicker,
-  Space,
   Button,
   Row,
   Col,
@@ -134,7 +133,7 @@ export default function AddMemberModal({
         setAvatarUrl("");
         onCancel();
       }}
-      destroyOnClose
+      destroyOnHidden
       okText="Lưu"
       cancelText="Hủy"
       width={900}
@@ -171,31 +170,33 @@ export default function AddMemberModal({
               label="Ảnh đại diện"
               rules={[{ required: true, message: "Vui lòng tải ảnh đại diện" }]}
             >
-              <Upload
-                accept="image/*"
-                beforeUpload={handleAvatarUpload}
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />} loading={uploading}>
-                  {avatarUrl ? "Thay ảnh" : "Chọn ảnh từ máy"}
-                </Button>
-              </Upload>
+              <div>
+                <Upload
+                  accept="image/*"
+                  beforeUpload={handleAvatarUpload}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />} loading={uploading}>
+                    {avatarUrl ? "Thay ảnh" : "Chọn ảnh từ máy"}
+                  </Button>
+                </Upload>
 
-              {avatarUrl && (
-                <div style={{ marginTop: 12 }}>
-                  <img
-                    src={avatarUrl}
-                    alt="avatar preview"
-                    style={{
-                      width: 120,
-                      height: 120,
-                      objectFit: "cover",
-                      borderRadius: "50%",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                </div>
-              )}
+                {avatarUrl && (
+                  <div style={{ marginTop: 12 }}>
+                    <img
+                      src={avatarUrl}
+                      alt="avatar preview"
+                      style={{
+                        width: 120,
+                        height: 120,
+                        objectFit: "cover",
+                        borderRadius: "50%",
+                        border: "1px solid #ccc",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </Form.Item>
 
             <Form.Item
@@ -223,111 +224,118 @@ export default function AddMemberModal({
                 {(fields, { add, remove }) => (
                   <>
                     {fields.map(({ key, name, ...restField }) => (
-                      <Space
+                      <Row
                         key={key}
-                        align="baseline"
-                        style={{ display: "flex", marginBottom: 8 }}
+                        gutter={[8, 8]}
+                        align="middle"
+                        style={{ marginBottom: 8 }}
                       >
-                        <Form.Item
-                          {...restField}
-                          name={[name, "platform"]}
-                          rules={[{ required: true, message: "Chọn nền tảng" }]}
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Select
-                            placeholder="Chọn nền tảng"
-                            style={{ width: 150 }}
+                        {/* Chọn nền tảng */}
+                        <Col xs={24} sm={8}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, "platform"]}
+                            rules={[
+                              { required: true, message: "Chọn nền tảng" },
+                            ]}
+                            style={{ marginBottom: 0 }}
                           >
-                            <Option value="LinkedIn">
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                <FaLinkedin color="#0077B5" />
-                                LinkedIn
-                              </span>
-                            </Option>
-                            <Option value="Facebook">
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                <FaFacebook color="#1877F2" />
-                                Facebook
-                              </span>
-                            </Option>
-                            <Option value="Twitter">
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                <FaTwitter color="#1DA1F2" />
-                                Twitter
-                              </span>
-                            </Option>
-                            <Option value="Instagram">
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                <FaInstagram color="#C13584" />
-                                Instagram
-                              </span>
-                            </Option>
-                            <Option value="TikTok">
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                <FaTiktok color="#000000" />
-                                TikTok
-                              </span>
-                            </Option>
-                          </Select>
-                        </Form.Item>
+                            <Select
+                              placeholder="Chọn nền tảng"
+                              style={{ width: "100%" }}
+                            >
+                              <Option value="LinkedIn">
+                                <span
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <FaLinkedin color="#0077B5" /> LinkedIn
+                                </span>
+                              </Option>
+                              <Option value="Facebook">
+                                <span
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <FaFacebook color="#1877F2" /> Facebook
+                                </span>
+                              </Option>
+                              <Option value="Twitter">
+                                <span
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <FaTwitter color="#1DA1F2" /> Twitter
+                                </span>
+                              </Option>
+                              <Option value="Instagram">
+                                <span
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <FaInstagram color="#C13584" /> Instagram
+                                </span>
+                              </Option>
+                              <Option value="TikTok">
+                                <span
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <FaTiktok color="#000000" /> TikTok
+                                </span>
+                              </Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
 
-                        <Form.Item
-                          {...restField}
-                          name={[name, "url"]}
-                          rules={[
-                            {
-                              required: true,
-                              type: "url",
-                              message: "Nhập link hợp lệ",
-                            },
-                          ]}
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Input
-                            placeholder="Nhập link"
-                            style={{ width: 250 }}
+                        {/* Nhập link */}
+                        <Col xs={24} sm={14}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, "url"]}
+                            rules={[
+                              {
+                                required: true,
+                                type: "url",
+                                message: "Nhập link hợp lệ",
+                              },
+                            ]}
+                            style={{ marginBottom: 0 }}
+                          >
+                            <Input
+                              placeholder="Nhập link"
+                              style={{ width: "100%" }}
+                            />
+                          </Form.Item>
+                        </Col>
+
+                        {/* Delete */}
+                        <Col xs={24} sm={2} style={{ textAlign: "center" }}>
+                          <DeleteOutlined
+                            style={{
+                              color: "red",
+                              fontSize: 18,
+                              cursor: "pointer",
+                            }}
+                            onClick={() => remove(name)}
                           />
-                        </Form.Item>
-
-                        <DeleteOutlined
-                          style={{
-                            color: "red",
-                            fontSize: 18,
-                            cursor: "pointer",
-                          }}
-                          onClick={() => remove(name)}
-                        />
-                      </Space>
+                        </Col>
+                      </Row>
                     ))}
 
                     <Form.Item>
@@ -345,7 +353,11 @@ export default function AddMemberModal({
               </Form.List>
             </Form.Item>
 
-            <Form.Item name="teamId" label="Team" rules={[{ required: true }]}>
+            <Form.Item
+              name="teamId"
+              label="Team"
+              rules={[{ required: true, message: "Vui lòng chọn team" }]}
+            >
               <Select placeholder="Chọn team">
                 {teams.map((t) => (
                   <Option key={t.id} value={t.id}>
@@ -358,7 +370,7 @@ export default function AddMemberModal({
             <Form.Item
               name="type"
               label="Hình thức"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: "Vui lòng chọn hình thức" }]}
             >
               <Select placeholder="Chọn hình thức">
                 <Option value="fulltime">Full Time</Option>
@@ -370,7 +382,7 @@ export default function AddMemberModal({
             <Form.Item
               name="jobType"
               label="Công việc"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: "Vui lòng chọn công việc" }]}
             >
               <Select
                 mode="multiple"
@@ -389,7 +401,9 @@ export default function AddMemberModal({
             <Form.Item
               name="startDate"
               label="Ngày bắt đầu"
-              rules={[{ required: true }]}
+              rules={[
+                { required: true, message: "Vui lòng chọn ngày bắt đầu" },
+              ]}
             >
               <DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
             </Form.Item>
