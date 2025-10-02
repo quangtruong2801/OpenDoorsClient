@@ -1,30 +1,52 @@
 @import "tailwindcss";
 
-/* Theme variables */
+/* 🎨 Biến màu Light Theme (mặc định) */
 :root {
-  --color-sider: #1e3a8a;   
-  --color-header: #152d61; 
-  --color-menu-item-hover: #3b82f6; 
-  --color-menu-item-selected: #1e40af; 
+  --color-bg: #f9fafb;
+  --color-text: #1e293b;
+  --color-sider: #f0f5ff;
+  --color-header: #e6f0ff;
+  --color-menu-item-hover: #bfdbfe;
+  --color-menu-item-selected: #3b82f6;
 }
 
+/* 🌙 Biến màu Dark Theme */
+[data-theme="dark"] {
+  --color-bg: #0f172a;
+  --color-text: #f8fafc;
+  --color-sider: #1e3a8a;
+  --color-header: #152d61;
+  --color-menu-item-hover: #37528b;
+  --color-menu-item-selected: #4c6a9b;
+}
 
-.ant-layout-sider,
+/* 🌐 Áp dụng màu */
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Sider + Menu */
+.ant-layout-sider {
+  background-color: var(--color-sider) !important;
+}
+
 .ant-menu,
 .ant-menu-sub {
-
-  color: #fff !important;
+  background-color: var(--color-sider) !important;
+  color: var(--color-text) !important;
 }
 
 .ant-menu-item,
 .ant-menu-submenu-title {
-  color: #fff !important;
+  color: var(--color-text) !important;
 }
 
 .ant-menu-item:hover,
 .ant-menu-submenu-title:hover {
   background-color: var(--color-menu-item-hover) !important;
-  color: #fff !important;
+  color: var(--color-text) !important;
 }
 
 .ant-menu-item-selected,
@@ -33,17 +55,24 @@
   color: #fff !important;
 }
 
-
+/* Header */
 .ant-layout-header {
   background-color: var(--color-header) !important;
-  color: #fff !important;
+  color: var(--color-text) !important;
   padding-left: 0 !important;
 }
 
-
+/* Logo Sidebar */
 .sidebar-logo {
-  color: #fff;
+  color: var(--color-text);
   font-weight: 700;
   text-align: center;
   padding: 1rem 0;
+}
+
+/* Nội dung */
+.ant-layout-content {
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  transition: background 0.3s ease, color 0.3s ease;
 }

@@ -1,13 +1,33 @@
 import { Modal, Form, Input } from "antd";
+import { useEffect } from "react";
 
 export type AddTeamModalProps = {
   open: boolean;
   onCancel: () => void;
   onSubmit: (values: { teamName: string }) => void;
+  initialValues?: { teamName: string } | null;
+  isEdit?: boolean;
 };
 
-export default function AddTeamModal({ open, onCancel, onSubmit }: AddTeamModalProps) {
+export default function AddTeamModal({
+  open,
+  onCancel,
+  onSubmit,
+  initialValues,
+  isEdit,
+}: AddTeamModalProps) {
   const [form] = Form.useForm();
+
+  // ✅ Set giá trị khi edit
+  useEffect(() => {
+    if (open) {
+      if (initialValues) {
+        form.setFieldsValue(initialValues);
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [open, initialValues, form]);
 
   const handleOk = async () => {
     try {
@@ -21,14 +41,14 @@ export default function AddTeamModal({ open, onCancel, onSubmit }: AddTeamModalP
 
   return (
     <Modal
-      title="Thêm Team mới"
+      title={isEdit ? "Chỉnh sửa Team" : "Thêm Team mới"}
       open={open}
       onOk={handleOk}
       onCancel={() => {
         form.resetFields();
         onCancel();
       }}
-      okText="Thêm"
+      okText={isEdit ? "Cập nhật" : "Thêm"}
       cancelText="Hủy"
     >
       <Form form={form} layout="vertical">

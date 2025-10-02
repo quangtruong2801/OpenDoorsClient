@@ -18,12 +18,14 @@ export default function JobManagement() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [total, setTotal] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null); // ✅
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // Lấy danh sách công việc
+  // 📡 Lấy danh sách công việc
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
@@ -31,7 +33,6 @@ export default function JobManagement() {
       if (!res.ok) throw new Error("Failed to fetch jobs");
 
       const result: Job[] = await res.json();
-
       const filtered = result.filter((j) =>
         j.jobName.toLowerCase().includes(search.toLowerCase())
       );
@@ -50,34 +51,47 @@ export default function JobManagement() {
     fetchJobs();
   }, [fetchJobs]);
 
-  // Thêm Job mới
-  const handleAddJob = useCallback(
-    async (values: Omit<Job, "jobId">) => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/jobs`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        });
-        if (!res.ok) throw new Error("Failed to create job");
+  // ➕ Thêm job
+  const handleAddJob = async (values: Omit<Job, "jobId">) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) throw new Error("Failed to create job");
 
-        message.success("✅ Thêm công việc thành công!");
-        setIsModalOpen(false);
-        fetchJobs();
-      } catch (err) {
-        console.error(err);
-        message.error("❌ Thêm công việc thất bại");
-      }
-    },
-    [fetchJobs]
-  );
+      message.success("Thêm công việc thành công!");
+      setIsModalOpen(false);
+      fetchJobs();
+    } catch (err) {
+      console.error(err);
+      message.error("❌ Thêm công việc thất bại");
+    }
+  };
 
-  // Edit
-  const handleEdit = useCallback((record: Job) => {
-    message.info(`✏️ Sửa công việc: ${record.jobName}`);
-  }, []);
+  // ✏️ Edit job
+  const handleEditJob = async (values: Partial<Job>) => {
+    if (!editingJob) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/jobs/${editingJob.jobId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
 
-  // Delete
+      if (!res.ok) throw new Error("Failed to update job");
+      message.success("Cập nhật công việc thành công!");
+      setEditingJob(null);
+      setIsModalOpen(false);
+      fetchJobs();
+    } catch (err) {
+      console.error(err);
+      message.error("❌ Cập nhật công việc thất bại");
+    }
+  };
+
+  // 🗑️ Xóa
   const handleDelete = useCallback(
     async (jobId: string) => {
       try {
@@ -98,28 +112,13 @@ export default function JobManagement() {
     [fetchJobs]
   );
 
-  // Columns
+  // 📊 Columns
   const columns: ColumnsType<Job> = useMemo(
     () => [
-      {
-        title: "Tên công việc",
-        dataIndex: "jobName",
-        key: "jobName",
-        width: 180,
-      },
+      { title: "Tên công việc", dataIndex: "jobName", key: "jobName", width: 180 },
       { title: "Kỹ năng", dataIndex: "skills", key: "skills", width: 200 },
-      {
-        title: "Yêu cầu",
-        dataIndex: "requirement",
-        key: "requirement",
-        width: 200,
-      },
-      {
-        title: "Mô tả",
-        dataIndex: "description",
-        key: "description",
-        width: 250,
-      },
+      { title: "Yêu cầu", dataIndex: "requirement", key: "requirement", width: 200 },
+      { title: "Mô tả", dataIndex: "description", key: "description", width: 250 },
       {
         title: "Hành động",
         key: "action",
@@ -130,7 +129,10 @@ export default function JobManagement() {
             <Button
               type="text"
               icon={<EditOutlined className="text-blue-600" />}
-              onClick={() => handleEdit(record)}
+              onClick={() => {
+                setEditingJob(record);
+                setIsModalOpen(true);
+              }}
             />
             <Popconfirm
               title="Xóa công việc này?"
@@ -138,16 +140,13 @@ export default function JobManagement() {
               okText="Xóa"
               cancelText="Hủy"
             >
-              <Button
-                type="text"
-                icon={<DeleteOutlined className="text-red-500" />}
-              />
+              <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
             </Popconfirm>
           </Space>
         ),
       },
     ],
-    [handleEdit, handleDelete]
+    [handleDelete]
   );
 
   return (
@@ -166,7 +165,10 @@ export default function JobManagement() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingJob(null);
+            setIsModalOpen(true);
+          }}
         >
           Thêm công việc
         </Button>
@@ -193,8 +195,16 @@ export default function JobManagement() {
 
       <AddJobModal
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onSubmit={(values) => handleAddJob(values as Omit<Job, "jobId">)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingJob(null);
+        }}
+        onSubmit={(values) =>
+          editingJob
+            ? handleEditJob(values as Partial<Job>)
+            : handleAddJob(values as Omit<Job, "jobId">)
+        }
+        initialValues={editingJob || undefined}
       />
     </div>
   );

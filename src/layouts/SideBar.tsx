@@ -34,7 +34,7 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
       label: "Job",
       children: [
         {
-          key: "/job",
+          key: "/job/management",
           label: <Link to="/job/management">Job Management</Link>,
         },
       ],
@@ -66,7 +66,7 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
 
       <Menu
         mode="inline"
-        theme="dark"
+        // theme="dark"
         selectedKeys={[location.pathname]}
         // defaultOpenKeys={["team"]}
         items={items}

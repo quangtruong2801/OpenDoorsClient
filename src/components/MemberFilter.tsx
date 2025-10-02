@@ -8,7 +8,7 @@ interface MemberFilterProps {
   type: string;
   jobType: string;
   teamId: string;
-  jobList: { id: string; jobName: string }[];
+  jobList: { id?: string; jobName?: string }[]; // id hoặc jobName có thể undefined
   teamList: Management[];
   onSearchChange: (v: string) => void;
   onTypeChange: (v: string) => void;
@@ -46,9 +46,15 @@ export default function MemberFilter({
         allowClear
         className="flex-1 min-w-[150px]"
       >
-        <Option value="fulltime">Full Time</Option>
-        <Option value="parttime">Part Time</Option>
-        <Option value="intern">Intern</Option>
+        <Option key="type-fulltime" value="fulltime">
+          Full Time
+        </Option>
+        <Option key="type-parttime" value="parttime">
+          Part Time
+        </Option>
+        <Option key="type-intern" value="intern">
+          Intern
+        </Option>
       </Select>
 
       {/* Job Filter */}
@@ -59,9 +65,12 @@ export default function MemberFilter({
         allowClear
         className="flex-1 min-w-[150px]"
       >
-        {jobList.map((j) => (
-          <Option key={j.id} value={j.jobName}>
-            {j.jobName}
+        {jobList.map((j, index) => (
+          <Option
+            key={j.id ?? `job-${index}`} // fallback nếu id undefined
+            value={j.jobName ?? `job-${index}`} // fallback nếu jobName undefined
+          >
+            {j.jobName ?? `Job ${index + 1}`}
           </Option>
         ))}
       </Select>
@@ -74,9 +83,12 @@ export default function MemberFilter({
         allowClear
         className="flex-1 min-w-[180px]"
       >
-        {teamList.map((t) => (
-          <Option key={t.id} value={t.id}>
-            {t.teamName}
+        {teamList.map((t, index) => (
+          <Option
+            key={t.id ?? `team-${index}`} // fallback nếu id undefined
+            value={t.id ?? `team-${index}`}
+          >
+            {t.teamName ?? `Team ${index + 1}`}
           </Option>
         ))}
       </Select>

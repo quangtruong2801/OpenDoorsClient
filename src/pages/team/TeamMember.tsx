@@ -31,20 +31,20 @@ export default function TeamMember() {
   const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [teamList, setTeamList] = useState<Management[]>([]);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
-
   const [jobList, setJobList] = useState<{ id: string; jobName: string }[]>([]);
 
+  // Fetch jobs
   useEffect(() => {
-    // Fetch jobs
     fetch(`${API_BASE_URL}/jobs`)
       .then((res) => res.json())
       .then(setJobList)
       .catch(console.error);
   }, []);
 
-  // Fetch danh sách team
+  // Fetch team list
   const fetchTeamList = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/teams`);
@@ -55,7 +55,7 @@ export default function TeamMember() {
     }
   };
 
-  // Fetch toàn bộ member
+  // Fetch members
   const fetchMembers = async () => {
     setLoading(true);
     try {
@@ -78,9 +78,7 @@ export default function TeamMember() {
   // Filter client-side
   const filteredData = useMemo(() => {
     return data.filter((member) => {
-      const matchesSearch = member.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
+      const matchesSearch = member.name.toLowerCase().includes(search.toLowerCase());
       const matchesType = type ? member.type === type : true;
       const matchesJobType = jobType ? member.jobType.includes(jobType) : true;
       const matchesTeam = team
@@ -97,38 +95,24 @@ export default function TeamMember() {
 
   // Handlers filter
   const handleSearchChange = (v: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      search: v,
-    });
+    setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: v });
   const handleTypeChange = (v: string | undefined) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      type: v || "", // nếu clear thì set về ""
-    });
-
+    setSearchParams({ ...Object.fromEntries(searchParams.entries()), type: v || "" });
   const handleJobTypeChange = (v: string | undefined) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      jobType: v || "",
-    });
-
+    setSearchParams({ ...Object.fromEntries(searchParams.entries()), jobType: v || "" });
   const handleTeamChange = (v: string | undefined) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      team: v || "",
-    });
+    setSearchParams({ ...Object.fromEntries(searchParams.entries()), team: v || "" });
 
   // Edit
-  const handleEdit = (record: Member) =>
-    message.info(`✏️ Sửa thông tin: ${record.name}`);
+  const handleEdit = (member: Member) => {
+    setEditingMember(member);
+    setIsModalOpen(true);
+  };
 
   // Delete
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/members/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`${API_BASE_URL}/members/${id}`, { method: "DELETE" });
       if (res.ok) {
         message.success("🗑️ Xóa thành viên thành công!");
         fetchMembers();
@@ -141,28 +125,48 @@ export default function TeamMember() {
     }
   };
 
-  // Add member
-  const handleAddMember = async (newMember: Omit<Member, "id">) => {
+  // Add/Edit member
+  const handleSaveMember = async (memberData: Omit<Member, "id">) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newMember),
-      });
-      if (res.ok) {
-        message.success("✅ Thêm thành viên thành công!");
-        setIsModalOpen(false);
-        await fetchMembers();
+      if (editingMember) {
+        // Edit
+        const res = await fetch(`${API_BASE_URL}/members/${editingMember.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(memberData),
+        });
+        if (res.ok) {
+          message.success("Cập nhật thành viên thành công!");
+          setIsModalOpen(false);
+          setEditingMember(null);
+          await fetchMembers();
+        } else {
+          const errorText = await res.text();
+          message.error(`❌ Cập nhật thất bại: ${errorText}`);
+        }
       } else {
-        const errorText = await res.text();
-        message.error(`❌ Thêm thất bại: ${errorText}`);
+        // Add
+        const res = await fetch(`${API_BASE_URL}/members`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(memberData),
+        });
+        if (res.ok) {
+          message.success("Thêm thành viên thành công!");
+          setIsModalOpen(false);
+          await fetchMembers();
+        } else {
+          const errorText = await res.text();
+          message.error(`❌ Thêm thất bại: ${errorText}`);
+        }
       }
     } catch (err) {
       console.error(err);
-      message.error("❌ Có lỗi xảy ra khi thêm thành viên!");
+      message.error("❌ Có lỗi xảy ra!");
     }
   };
 
+  // Table columns
   const columns: ColumnsType<Member> = [
     {
       title: "Avatar",
@@ -173,12 +177,7 @@ export default function TeamMember() {
         <img
           src={url}
           alt="avatar"
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            objectFit: "cover",
-          }}
+          style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
         />
       ),
     },
@@ -196,8 +195,7 @@ export default function TeamMember() {
           <Space direction="vertical">
             {socials.map((s, idx) => {
               let IconComponent;
-              let color = "#000"; // default
-
+              let color = "#000";
               switch (s.platform) {
                 case "LinkedIn":
                   IconComponent = FaLinkedin;
@@ -222,18 +220,9 @@ export default function TeamMember() {
                 default:
                   IconComponent = null;
               }
-
               return (
-                <a
-                  key={idx}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1"
-                >
-                  {IconComponent && (
-                    <IconComponent style={{ color, fontSize: 16 }} />
-                  )}
+                <a key={idx} href={s.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                  {IconComponent && <IconComponent style={{ color, fontSize: 16 }} />}
                   <span>{s.url}</span>
                 </a>
               );
@@ -243,12 +232,7 @@ export default function TeamMember() {
           "—"
         ),
     },
-    {
-      title: "Ngày bắt đầu",
-      dataIndex: "startDate",
-      key: "startDate",
-      width: 150,
-    },
+    { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate", width: 150 },
     { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
     {
       title: "Công việc",
@@ -281,10 +265,7 @@ export default function TeamMember() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined className="text-red-500" />}
-            />
+            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
           </Popconfirm>
         </Space>
       ),
@@ -312,7 +293,10 @@ export default function TeamMember() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingMember(null);
+            setIsModalOpen(true);
+          }}
           className="whitespace-nowrap"
         >
           Thêm thành viên
@@ -340,8 +324,13 @@ export default function TeamMember() {
 
       <AddMemberModal
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onSubmit={handleAddMember}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingMember(null);
+        }}
+        onSubmit={handleSaveMember}
+        initialValues={editingMember || undefined}
+        isEdit={!!editingMember}
       />
     </div>
   );
