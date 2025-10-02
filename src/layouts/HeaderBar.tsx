@@ -30,10 +30,10 @@ export default function HeaderBar({
         type="text"
         icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         onClick={() => setCollapsed(!collapsed)}
-        className="text-white"
+        className="!text-[var(--color-text)]"
       />
 
-      {/* 🌗 Công tắc chuyển Dark/Light */}
+      {/* Chuyển Dark/Light */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">
           {isDark ? "Dark" : "Light"} Mode

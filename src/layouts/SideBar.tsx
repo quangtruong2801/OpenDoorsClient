@@ -66,7 +66,6 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
 
       <Menu
         mode="inline"
-        // theme="dark"
         selectedKeys={[location.pathname]}
         // defaultOpenKeys={["team"]}
         items={items}

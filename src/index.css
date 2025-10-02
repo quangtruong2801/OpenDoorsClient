@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* 🎨 Biến màu Light Theme (mặc định) */
+/* Biến màu Light Theme (mặc định) */
 :root {
   --color-bg: #f9fafb;
   --color-text: #1e293b;
@@ -10,17 +10,17 @@
   --color-menu-item-selected: #3b82f6;
 }
 
-/* 🌙 Biến màu Dark Theme */
+/* Biến màu Dark Theme */
 [data-theme="dark"] {
-  --color-bg: #0f172a;
+  --color-bg: #152131;
   --color-text: #f8fafc;
-  --color-sider: #1e3a8a;
-  --color-header: #152d61;
+  --color-sider: #0b1727;
+  --color-header: #14223f;
   --color-menu-item-hover: #37528b;
   --color-menu-item-selected: #4c6a9b;
 }
 
-/* 🌐 Áp dụng màu */
+/* Áp dụng màu */
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
