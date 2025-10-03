@@ -1,5 +1,10 @@
 import { Menu } from "antd";
-import { TeamOutlined, HomeOutlined, SettingOutlined, SolutionOutlined } from "@ant-design/icons";
+import {
+  TeamOutlined,
+  HomeOutlined,
+  SettingOutlined,
+  SolutionOutlined,
+} from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import openIcon from "../assets/logoVNTT1.png";
 import closeIcon from "../assets/logoVNTT2.png";
@@ -37,6 +42,24 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
           key: "/job/management",
           label: <Link to="/job/management">Job Management</Link>,
         },
+      ],
+    },
+    {
+      key: "recruitment",
+      icon: <SolutionOutlined />,
+      label: "Recruitment",
+      children: [
+        {
+          key: "/recruitment/management",
+          label: (
+            <Link to="/recruitment/management">Quản lý tin tuyển dụng</Link>
+          ),
+        },
+
+        {
+        key: "/recruitments",
+        label: <Link to="/recruitments">Trang tuyển dụng</Link>,
+      },
       ],
     },
     {
