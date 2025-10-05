@@ -1,21 +1,16 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { Table, Space, Button, Popconfirm, message, Tag } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
-import {
-  FaFacebook,
-  FaLinkedin,
-  FaTwitter,
-  FaInstagram,
-  FaTiktok,
-} from "react-icons/fa";
 
-import { API_BASE_URL } from "../../api/config";
+import axios from "../../api/config";
 import AddMemberModal from "../../components/AddMemberModal";
 import MemberFilter from "../../components/MemberFilter";
-import type { Member } from "../../types/Member";
+import type { Member, NewMember } from "../../types/Member";
 import type { Management } from "../../types/Management";
+import { SOCIAL_OPTIONS } from "../../constants/socials";
 
 export default function TeamMember() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,51 +26,47 @@ export default function TeamMember() {
   const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [teamList, setTeamList] = useState<Management[]>([]);
+  const [jobList, setJobList] = useState<{ id: string; jobName: string }[]>([]);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
-  const [jobList, setJobList] = useState<{ id: string; jobName: string }[]>([]);
 
-  // Fetch jobs
+  // Fetch jobs & teams
   useEffect(() => {
-    fetch(`${API_BASE_URL}/jobs`)
-      .then((res) => res.json())
-      .then(setJobList)
-      .catch(console.error);
+    const fetchData = async () => {
+      try {
+        const [jobsRes, teamsRes] = await Promise.all([
+          axios.get("/jobs"),
+          axios.get("/teams"),
+        ]);
+        setJobList(jobsRes.data);
+        setTeamList(teamsRes.data);
+      } catch (err) {
+        console.error("❌ Lỗi fetch jobs/teams:", err);
+      }
+    };
+    fetchData();
   }, []);
-
-  // Fetch team list
-  const fetchTeamList = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/teams`);
-      const result = await res.json();
-      setTeamList(result);
-    } catch (err) {
-      console.error("❌ Lỗi fetch team:", err);
-    }
-  };
 
   // Fetch members
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/members`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const result: Member[] = await res.json();
-      setData(result);
+      const res = await axios.get("/members");
+      setData(res.data);
     } catch (err) {
-      console.error("❌ Lỗi fetch members:", err);
+      console.error(err);
+      message.error("Không tải được danh sách thành viên!");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTeamList();
     fetchMembers();
   }, []);
 
-  // Filter client-side
+  // Filter data client-side
   const filteredData = useMemo(() => {
     return data.filter((member) => {
       const matchesSearch = member.name.toLowerCase().includes(search.toLowerCase());
@@ -84,7 +75,6 @@ export default function TeamMember() {
       const matchesTeam = team
         ? teamList.find((t) => t.id === team)?.teamName === member.team
         : true;
-
       return matchesSearch && matchesType && matchesJobType && matchesTeam;
     });
   }, [data, search, type, jobType, team, teamList]);
@@ -96,29 +86,25 @@ export default function TeamMember() {
   // Handlers filter
   const handleSearchChange = (v: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: v });
-  const handleTypeChange = (v: string | undefined) =>
+  const handleTypeChange = (v?: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), type: v || "" });
-  const handleJobTypeChange = (v: string | undefined) =>
+  const handleJobTypeChange = (v?: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), jobType: v || "" });
-  const handleTeamChange = (v: string | undefined) =>
+  const handleTeamChange = (v?: string) =>
     setSearchParams({ ...Object.fromEntries(searchParams.entries()), team: v || "" });
 
-  // Edit
+  // Edit member
   const handleEdit = (member: Member) => {
     setEditingMember(member);
     setIsModalOpen(true);
   };
 
-  // Delete
+  // Delete member
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/members/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        message.success("🗑️ Xóa thành viên thành công!");
-        fetchMembers();
-      } else {
-        message.error("❌ Xóa thất bại!");
-      }
+      await axios.delete(`/members/${id}`);
+      message.success("🗑️ Xóa thành viên thành công!");
+      fetchMembers();
     } catch (err) {
       console.error(err);
       message.error("❌ Có lỗi khi xóa!");
@@ -126,40 +112,18 @@ export default function TeamMember() {
   };
 
   // Add/Edit member
-  const handleSaveMember = async (memberData: Omit<Member, "id">) => {
+  const handleSaveMember = async (memberData: NewMember) => {
     try {
       if (editingMember) {
-        // Edit
-        const res = await fetch(`${API_BASE_URL}/members/${editingMember.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(memberData),
-        });
-        if (res.ok) {
-          message.success("Cập nhật thành viên thành công!");
-          setIsModalOpen(false);
-          setEditingMember(null);
-          await fetchMembers();
-        } else {
-          const errorText = await res.text();
-          message.error(`❌ Cập nhật thất bại: ${errorText}`);
-        }
+        await axios.put(`/members/${editingMember.id}`, memberData);
+        message.success("✅ Cập nhật thành viên thành công!");
       } else {
-        // Add
-        const res = await fetch(`${API_BASE_URL}/members`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(memberData),
-        });
-        if (res.ok) {
-          message.success("Thêm thành viên thành công!");
-          setIsModalOpen(false);
-          await fetchMembers();
-        } else {
-          const errorText = await res.text();
-          message.error(`❌ Thêm thất bại: ${errorText}`);
-        }
+        await axios.post("/members", memberData);
+        message.success("✅ Thêm thành viên thành công!");
       }
+      setIsModalOpen(false);
+      setEditingMember(null);
+      fetchMembers();
     } catch (err) {
       console.error(err);
       message.error("❌ Có lỗi xảy ra!");
@@ -193,35 +157,22 @@ export default function TeamMember() {
       render: (socials: { platform: string; url: string }[]) =>
         socials && socials.length > 0 ? (
           <Space direction="vertical">
-            {socials.map((s, idx) => {
-              let IconComponent;
-              let color = "#000";
-              switch (s.platform) {
-                case "LinkedIn":
-                  IconComponent = FaLinkedin;
-                  color = "#0077B5";
-                  break;
-                case "Facebook":
-                  IconComponent = FaFacebook;
-                  color = "#1877F2";
-                  break;
-                case "Twitter":
-                  IconComponent = FaTwitter;
-                  color = "#1DA1F2";
-                  break;
-                case "Instagram":
-                  IconComponent = FaInstagram;
-                  color = "#C13584";
-                  break;
-                case "TikTok":
-                  IconComponent = FaTiktok;
-                  color = "#000000";
-                  break;
-                default:
-                  IconComponent = null;
-              }
+            {socials.map((s) => {
+              const option = SOCIAL_OPTIONS.find(
+                (o) =>
+                  o.key.toLowerCase() === s.platform.toLowerCase() ||
+                  o.label.toLowerCase() === s.platform.toLowerCase()
+              );
+              const IconComponent = option?.icon;
+              const color = option?.color || "#000";
               return (
-                <a key={idx} href={s.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                <a
+                  key={s.platform + s.url}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1"
+                >
                   {IconComponent && <IconComponent style={{ color, fontSize: 16 }} />}
                   <span>{s.url}</span>
                 </a>
@@ -240,11 +191,13 @@ export default function TeamMember() {
       key: "jobType",
       width: 180,
       render: (jobs: string[]) =>
-        jobs?.map((job, idx) => (
-          <Tag color="blue" key={idx}>
-            {job}
-          </Tag>
-        )) || "—",
+        jobs && jobs.length > 0
+          ? jobs.map((job) => (
+              <Tag color="blue" key={job}>
+                {job}
+              </Tag>
+            ))
+          : "—",
     },
     { title: "Team", dataIndex: "team", key: "team", width: 150 },
     {

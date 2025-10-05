@@ -9,7 +9,7 @@ import {
 import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
 
-import { API_BASE_URL } from "../../api/config";
+import api from "../../api/config"; // <-- dùng axios instance
 import type { Recruitment } from "../../types/Recruitment";
 import AddRecruitmentModal from "../../components/AddRecruitmentModal";
 
@@ -37,9 +37,8 @@ export default function RecruitmentManagement() {
   const fetchRecruitments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/recruitments`);
-      if (!res.ok) throw new Error("Fetch error");
-      const result: Recruitment[] = await res.json();
+      const res = await api.get<Recruitment[]>("/recruitments");
+      const result = res.data;
 
       // ✅ Chuyển deadline sang Date
       const withDate = result.map((r) => ({
@@ -57,7 +56,7 @@ export default function RecruitmentManagement() {
 
       setTotal(filtered.length);
       setData(filtered.slice((page - 1) * pageSize, page * pageSize));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       message.error("Lỗi tải danh sách tuyển dụng");
     } finally {
@@ -77,16 +76,11 @@ export default function RecruitmentManagement() {
         deadline: values.deadline ? values.deadline.toISOString() : null,
       };
 
-      const res = await fetch(`${API_BASE_URL}/recruitments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Add failed");
+      await api.post("/recruitments", payload);
       message.success("Thêm tin tuyển dụng thành công!");
       setIsModalOpen(false);
       fetchRecruitments();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       message.error("Thêm thất bại");
     }
@@ -102,25 +96,12 @@ export default function RecruitmentManagement() {
     };
 
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/recruitments/${editingRecruitment.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Update failed: ${res.status} ${text}`);
-      }
-
+      await api.put(`/recruitments/${editingRecruitment.id}`, payload);
       message.success("Cập nhật tin thành công!");
       setEditingRecruitment(null);
       setIsModalOpen(false);
       fetchRecruitments();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       message.error("Cập nhật thất bại");
     }
@@ -130,13 +111,10 @@ export default function RecruitmentManagement() {
   const handleDelete = useCallback(
     async (id: string) => {
       try {
-        const res = await fetch(`${API_BASE_URL}/recruitments/${id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) throw new Error("Delete failed");
+        await api.delete(`/recruitments/${id}`);
         message.success("Xóa thành công!");
         fetchRecruitments();
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(err);
         message.error("Xóa thất bại");
       }

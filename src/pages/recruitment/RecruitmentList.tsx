@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
 import type { Recruitment } from "../../types/Recruitment";
-import { API_BASE_URL } from "../../api/config";
+import api from "../../api/config"; // <-- dùng axios instance
 
 export default function RecruitmentList() {
   const [recruitments, setRecruitments] = useState<Recruitment[]>([]);
@@ -12,28 +12,34 @@ export default function RecruitmentList() {
 
   useEffect(() => {
     const fetchRecruitments = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/recruitments`);
-        const data = await res.json();
+        const res = await api.get<Recruitment[]>("/recruitments");
+        const data = res.data;
         const parsed = data.map((r: Recruitment) => ({
           ...r,
-          deadline: new Date(r.deadline),
+          deadline: r.deadline ? new Date(r.deadline) : new Date(),
         }));
         setRecruitments(parsed);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Lỗi tải danh sách tuyển dụng:", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchRecruitments();
   }, []);
 
-  if (loading) return <Spin style={{ display: "block", margin: "100px auto" }} />;
+  if (loading)
+    return <Spin style={{ display: "block", margin: "100px auto" }} />;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600" style={{ color: "var(--color-text)" }}>
+      <h1
+        className="text-3xl font-bold mb-6 text-center text-blue-600"
+        style={{ color: "var(--color-text)" }}
+      >
         💼 Danh sách tuyển dụng
       </h1>
 
@@ -51,25 +57,40 @@ export default function RecruitmentList() {
               className="rounded-2xl border border-[rgba(59,130,246,0.3)] backdrop-blur-sm transition-all"
               style={{
                 background: "transparent",
-                color: "var(--color-text)", 
+                color: "var(--color-text)",
               }}
             >
               <Card
                 hoverable
-                title={<span className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>{job.title}</span>}
-                variant="borderless"
+                title={
+                  <span
+                    className="text-lg font-semibold"
+                    style={{ color: "var(--color-text)" }}
+                  >
+                    {job.title}
+                  </span>
+                }
                 style={{
-                  background: "transparent", 
+                  background: "transparent",
                   boxShadow: "none",
                   border: "none",
                   color: "var(--color-text)",
                 }}
               >
                 <div className="mb-3 text-[15px]">
-                  <p><strong>🏢 Công ty:</strong> {job.companyName}</p>
-                  <p><strong>📍 Địa điểm:</strong> {job.location}</p>
-                  <p><strong>💰 Mức lương:</strong> {job.salary}</p>
-                  <p><strong>📅 Hạn nộp:</strong> {dayjs(job.deadline).format("DD-MM-YYYY")}</p>
+                  <p>
+                    <strong>🏢 Công ty:</strong> {job.companyName}
+                  </p>
+                  <p>
+                    <strong>📍 Địa điểm:</strong> {job.location}
+                  </p>
+                  <p>
+                    <strong>💰 Mức lương:</strong> {job.salary}
+                  </p>
+                  <p>
+                    <strong>📅 Hạn nộp:</strong>{" "}
+                    {dayjs(job.deadline).format("DD-MM-YYYY")}
+                  </p>
                 </div>
 
                 <Link to={`/recruitment/${job.id}`}>

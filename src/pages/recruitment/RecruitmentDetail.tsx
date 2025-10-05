@@ -11,7 +11,7 @@ import {
   Building2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { API_BASE_URL } from "../../api/config";
+import api from "../../api/config"; // <-- dùng axios instance
 import dayjs from "dayjs";
 
 type Recruitment = {
@@ -36,11 +36,11 @@ export default function RecruitmentDetail() {
 
   useEffect(() => {
     const fetchRecruitment = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/recruitments/${id}`);
-        const data = await res.json();
-        setRecruitment(data);
-      } catch (err) {
+        const res = await api.get<Recruitment>(`/recruitments/${id}`);
+        setRecruitment(res.data);
+      } catch (err: unknown) {
         console.error("Lỗi tải tin tuyển dụng:", err);
       } finally {
         setLoading(false);
@@ -58,7 +58,11 @@ export default function RecruitmentDetail() {
   }
 
   if (!recruitment) {
-    return <p className="text-center mt-10 text-lg">Không tìm thấy tin tuyển dụng.</p>;
+    return (
+      <p className="text-center mt-10 text-lg">
+        Không tìm thấy tin tuyển dụng.
+      </p>
+    );
   }
 
   return (
@@ -71,7 +75,10 @@ export default function RecruitmentDetail() {
       {/* Phần đầu */}
       <div
         className="rounded-2xl p-8 shadow-lg text-center mb-10"
-        style={{ backgroundColor: "var(--color-menu-item-selected)", color: "#fff" }}
+        style={{
+          backgroundColor: "var(--color-menu-item-selected)",
+          color: "#fff",
+        }}
       >
         <h1 className="text-3xl font-bold mb-2">{recruitment.title}</h1>
         <div className="flex items-center justify-center gap-2 text-lg">
@@ -95,11 +102,26 @@ export default function RecruitmentDetail() {
       {/* Thông tin tổng quan */}
       <div
         className="grid md:grid-cols-2 gap-6 mb-10 p-6 rounded-xl shadow-md border"
-        style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text)" }}
+        style={{
+          backgroundColor: "var(--color-bg)",
+          color: "var(--color-text)",
+        }}
       >
-        <InfoItem icon={<DollarSign size={20} />} label="Mức lương" value={recruitment.salary} />
-        <InfoItem icon={<MapPin size={20} />} label="Địa điểm" value={recruitment.location} />
-        <InfoItem icon={<Briefcase size={20} />} label="Kinh nghiệm" value={`${recruitment.experience} năm`} />
+        <InfoItem
+          icon={<DollarSign size={20} />}
+          label="Mức lương"
+          value={recruitment.salary}
+        />
+        <InfoItem
+          icon={<MapPin size={20} />}
+          label="Địa điểm"
+          value={recruitment.location}
+        />
+        <InfoItem
+          icon={<Briefcase size={20} />}
+          label="Kinh nghiệm"
+          value={`${recruitment.experience} năm`}
+        />
         <InfoItem
           icon={<Calendar size={20} />}
           label="Hạn nộp hồ sơ"
@@ -115,7 +137,10 @@ export default function RecruitmentDetail() {
       {/* Liên hệ */}
       <motion.div
         className="mt-12 p-6 rounded-xl shadow-md border"
-        style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text)" }}
+        style={{
+          backgroundColor: "var(--color-bg)",
+          color: "var(--color-text)",
+        }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
@@ -137,7 +162,15 @@ export default function RecruitmentDetail() {
 }
 
 // 🧩 Component con: Thông tin tổng quan
-function InfoItem({ icon, label, value }: { icon: JSX.Element; label: string; value: string }) {
+function InfoItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: JSX.Element;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex items-center gap-3 text-lg">
       <span className="text-[var(--color-menu-item-selected)]">{icon}</span>
@@ -150,7 +183,13 @@ function InfoItem({ icon, label, value }: { icon: JSX.Element; label: string; va
 }
 
 // 🧩 Component con: Section nội dung
-function Section({ title, content }: { title: string; content: string }) {
+function Section({
+  title,
+  content,
+}: {
+  title: string;
+  content: string;
+}) {
   return (
     <motion.div
       className="mb-10 p-6 rounded-xl shadow-md border"

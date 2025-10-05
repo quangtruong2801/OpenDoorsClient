@@ -8,7 +8,7 @@ import {
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 
-import { API_BASE_URL } from "../../api/config";
+import api from "../../api/config"; // <-- dùng axios instance
 import type { Job } from "../../types/Job";
 import AddJobModal from "../../components/AddJobModal";
 
@@ -21,7 +21,7 @@ export default function JobManagement() {
   const [search, setSearch] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null); // ✅
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
@@ -29,17 +29,16 @@ export default function JobManagement() {
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs`);
-      if (!res.ok) throw new Error("Failed to fetch jobs");
+      const res = await api.get<Job[]>("/jobs");
+      const result = res.data;
 
-      const result: Job[] = await res.json();
       const filtered = result.filter((j) =>
         j.jobName.toLowerCase().includes(search.toLowerCase())
       );
 
       setTotal(filtered.length);
       setData(filtered.slice((page - 1) * pageSize, page * pageSize));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       message.error("❌ Lỗi khi tải danh sách công việc");
     } finally {
@@ -54,17 +53,11 @@ export default function JobManagement() {
   // ➕ Thêm job
   const handleAddJob = async (values: Omit<Job, "jobId">) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      if (!res.ok) throw new Error("Failed to create job");
-
+      await api.post("/jobs", values);
       message.success("Thêm công việc thành công!");
       setIsModalOpen(false);
       fetchJobs();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       message.error("❌ Thêm công việc thất bại");
     }
@@ -74,18 +67,12 @@ export default function JobManagement() {
   const handleEditJob = async (values: Partial<Job>) => {
     if (!editingJob) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs/${editingJob.jobId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) throw new Error("Failed to update job");
+      await api.put(`/jobs/${editingJob.jobId}`, values);
       message.success("Cập nhật công việc thành công!");
       setEditingJob(null);
       setIsModalOpen(false);
       fetchJobs();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       message.error("❌ Cập nhật công việc thất bại");
     }
@@ -95,16 +82,10 @@ export default function JobManagement() {
   const handleDelete = useCallback(
     async (jobId: string) => {
       try {
-        const res = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
-          method: "DELETE",
-        });
-        if (res.ok) {
-          message.success("🗑️ Xóa thành công!");
-          fetchJobs();
-        } else {
-          message.error("❌ Xóa thất bại!");
-        }
-      } catch (err) {
+        await api.delete(`/jobs/${jobId}`);
+        message.success("🗑️ Xóa thành công!");
+        fetchJobs();
+      } catch (err: unknown) {
         console.error(err);
         message.error("❌ Có lỗi khi xóa!");
       }

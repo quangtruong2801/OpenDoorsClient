@@ -8,20 +8,90 @@ import JobManagement from "../pages/job/JobManagement";
 import RecruitmentManagement from "../pages/recruitment/RecruitmentManagement";
 import RecruitmentList from "../pages/recruitment/RecruitmentList";
 import RecruitmentDetail from "../pages/recruitment/RecruitmentDetail";
+import PrivateRouter from "../layouts/PrivateRoute";
+import LoginPage from "../pages/LoginPage"; 
 
 export default function AppRoutes() {
   return (
-    <MainLayout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/team/member" element={<TeamMember />} />
-        <Route path="/team/management" element={<TeamManagement />} />
-        <Route path="/job/management" element={<JobManagement />} />
-        <Route path="/recruitment/management" element={<RecruitmentManagement />} />
-        <Route path="/recruitments" element={<RecruitmentList />} />
-        <Route path="/recruitment/:id" element={<RecruitmentDetail />} />
-      </Routes>
-    </MainLayout>
+    <Routes>
+      {/* Public pages */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/"
+        element={
+          <MainLayout>
+            <Home />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/recruitments"
+        element={
+          <MainLayout>
+            <RecruitmentList />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/recruitment/:id"
+        element={
+          <MainLayout>
+            <RecruitmentDetail />
+          </MainLayout>
+        }
+      />
+
+      {/* Private pages (admin only) */}
+      <Route
+        path="/settings"
+        element={
+          <PrivateRouter adminOnly>
+            <MainLayout>
+              <Settings />
+            </MainLayout>
+          </PrivateRouter>
+        }
+      />
+      <Route
+        path="/team/member"
+        element={
+          <PrivateRouter adminOnly>
+            <MainLayout>
+              <TeamMember />
+            </MainLayout>
+          </PrivateRouter>
+        }
+      />
+      <Route
+        path="/team/management"
+        element={
+          <PrivateRouter adminOnly>
+            <MainLayout>
+              <TeamManagement />
+            </MainLayout>
+          </PrivateRouter>
+        }
+      />
+      <Route
+        path="/job/management"
+        element={
+          <PrivateRouter adminOnly>
+            <MainLayout>
+              <JobManagement />
+            </MainLayout>
+          </PrivateRouter>
+        }
+      />
+      <Route
+        path="/recruitment/management"
+        element={
+          <PrivateRouter adminOnly>
+            <MainLayout>
+              <RecruitmentManagement />
+            </MainLayout>
+          </PrivateRouter>
+        }
+      />
+    </Routes>
   );
 }

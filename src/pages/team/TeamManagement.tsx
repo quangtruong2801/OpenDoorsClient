@@ -4,7 +4,7 @@ import { EditOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 
-import { API_BASE_URL } from "../../api/config";
+import axios from "../../api/config";
 import AddTeamModal from "../../components/AddTeamModal";
 import TeamFilter from "../../components/TeamManagementFilter";
 import type { Management } from "../../types/Management";
@@ -28,17 +28,15 @@ export default function TeamManagement() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/teams`);
-      if (!res.ok) throw new Error("Failed to fetch teams");
+      const res = await axios.get<Management[]>("/teams");
+      const result = res.data;
 
-      const result: Management[] = await res.json();
-
-      // Lọc search
+      // 🔍 Lọc theo từ khóa
       let filtered = result.filter((d) =>
         d.teamName.toLowerCase().includes(search.toLowerCase())
       );
 
-      // Lọc số lượng member
+      // 🔍 Lọc theo số lượng thành viên
       filtered = filtered.filter((d) => {
         if (memberFilter === "lt5") return d.members < 5;
         if (memberFilter === "5to10") return d.members >= 5 && d.members <= 10;
@@ -64,27 +62,13 @@ export default function TeamManagement() {
   const handleSaveTeam = async (values: { teamName: string }) => {
     try {
       if (editingTeam) {
-        // ✏️ Sửa team
-        const res = await fetch(`${API_BASE_URL}/teams/${editingTeam.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        });
-
-        if (!res.ok) throw new Error("Failed to update team");
-
-        message.success("Cập nhật team thành công!");
+        // ✏️ Cập nhật team
+        await axios.put(`/teams/${editingTeam.id}`, values);
+        message.success("✅ Cập nhật team thành công!");
       } else {
         // ➕ Thêm team mới
-        const res = await fetch(`${API_BASE_URL}/teams`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        });
-
-        if (!res.ok) throw new Error("Failed to create team");
-
-        message.success("Thêm team thành công!");
+        await axios.post("/teams", values);
+        message.success("✅ Thêm team thành công!");
       }
 
       setIsModalOpen(false);
@@ -105,15 +89,9 @@ export default function TeamManagement() {
   // 🗑️ Delete team
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/teams/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        message.success("🗑️ Xóa thành công!");
-        fetchData();
-      } else {
-        message.error("❌ Xóa thất bại!");
-      }
+      await axios.delete(`/teams/${id}`);
+      message.success("🗑️ Xóa thành công!");
+      fetchData();
     } catch (err) {
       console.error(err);
       message.error("❌ Có lỗi khi xóa!");
@@ -155,10 +133,7 @@ export default function TeamManagement() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined className="text-red-500" />}
-            />
+            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
           </Popconfirm>
         </Space>
       ),
