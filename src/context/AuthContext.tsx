@@ -7,7 +7,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true); // ✅ Thêm trạng thái loading
+  const [loading, setLoading] = useState(true);
 
   const login = async (token: string) => {
     localStorage.setItem("token", token);
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Token không hợp lệ -> user = null
         }
       }
-      setLoading(false); // ✅ chỉ set false sau khi đã xử lý xong
+      setLoading(false); //chỉ set false sau khi đã xử lý xong
     };
     init();
   }, []);

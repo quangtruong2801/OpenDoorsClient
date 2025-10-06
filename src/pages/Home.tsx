@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Card, Row, Col, Spin, Button } from "antd";
+import { Card, Row, Col, Spin, Button, Tag } from "antd";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
-import { motion } from "framer-motion";
 import type { Recruitment } from "../types/Recruitment";
-import api from "../api/config"; // <-- axios instance
+import api from "../api/config";
 
 export default function Home() {
   const [recruitments, setRecruitments] = useState<Recruitment[]>([]);
@@ -30,77 +29,52 @@ export default function Home() {
   }, []);
 
   if (loading)
-    return <Spin style={{ display: "block", margin: "100px auto" }} />;
+    return <Spin size="large" style={{ display: "block", margin: "100px auto" }} />;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1
-        className="text-3xl font-bold mb-6 text-center text-blue-600"
-        style={{ color: "var(--color-text)" }}
-      >
+      <h1 className="text-4xl font-bold mb-8 text-center text-blue-600">
         Danh sách tuyển dụng
       </h1>
 
       <Row gutter={[24, 24]}>
-        {recruitments.map((job, index) => (
-          <Col xs={24} sm={12} md={8} key={job.id}>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
-              whileHover={{
-                scale: 1.03,
-                borderColor: "var(--color-menu-item-selected)",
-              }}
-              className="rounded-2xl border border-[rgba(59,130,246,0.3)] backdrop-blur-sm transition-all"
-              style={{
-                background: "transparent",
-                color: "var(--color-text)",
-              }}
-            >
-              <Card
-                hoverable
-                title={
-                  <span
-                    className="text-lg font-semibold"
-                    style={{ color: "var(--color-text)" }}
-                  >
-                    {job.title}
-                  </span>
-                }
-                variant="borderless"
-                style={{
-                  background: "transparent",
-                  boxShadow: "none",
-                  border: "none",
-                  color: "var(--color-text)",
-                }}
-              >
-                <div className="mb-3 text-[15px]">
-                  <p>
-                    <strong>🏢 Công ty:</strong> {job.companyName}
-                  </p>
-                  <p>
-                    <strong>📍 Địa điểm:</strong> {job.location}
-                  </p>
-                  <p>
-                    <strong>💰 Mức lương:</strong> {job.salary}
-                  </p>
-                  <p>
-                    <strong>📅 Hạn nộp:</strong>{" "}
-                    {dayjs(job.deadline).format("DD-MM-YYYY")}
-                  </p>
-                </div>
+        {recruitments.map((job) => {
+          const isExpired = dayjs(job.deadline).isBefore(dayjs());
 
-                <Link to={`/recruitment/${job.id}`}>
-                  <Button type="primary" block>
-                    Xem chi tiết
-                  </Button>
-                </Link>
-              </Card>
-            </motion.div>
-          </Col>
-        ))}
+          return (
+            <Col xs={24} sm={12} md={8} key={job.id}>
+              <div className="rounded-3xl border border-gray-200 shadow-lg overflow-hidden transition-transform bg-white hover:scale-105">
+                <Card
+                  hoverable
+                  style={{ border: "none", borderRadius: "1rem" }}
+                  bodyStyle={{ padding: "20px" }}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h2 className="text-lg font-semibold text-gray-800">{job.title}</h2>
+                    {isExpired ? (
+                      <Tag color="red">Hết hạn</Tag>
+                    ) : (
+                      <Tag color="green">Đang tuyển</Tag>
+                    )}
+                  </div>
+
+                  <div className="text-sm text-gray-600 space-y-2 mb-4">
+                    {/* <p>🏢 <strong>Công ty:</strong> {job.companyName}</p> */}
+                    <p><strong>Địa điểm:</strong> {job.location}</p>
+                    <p><strong>Mức lương:</strong> {job.salary}</p>
+                    <p><strong>Hạn nộp:</strong> {dayjs(job.deadline).format("DD-MM-YYYY")}</p>
+                  </div>
+
+                  <Link to={`/recruitment/${job.id}`}>
+                    <Button type="primary" block size="middle">
+                      Xem chi tiết
+                    </Button>
+                  </Link>
+                </Card>
+              </div>
+            </Col>
+          );
+        })}
       </Row>
     </div>
   );
