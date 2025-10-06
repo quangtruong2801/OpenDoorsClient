@@ -1,5 +1,5 @@
 import { Layout } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./SideBar";
 import HeaderBar from "./HeaderBar";
 
@@ -10,7 +10,14 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    const stored = localStorage.getItem("sidebarCollapsed");
+    return stored ? stored === "true" : false; // mặc định mở
+  });
+
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", String(collapsed));
+  }, [collapsed]);
 
   return (
     <Layout className="min-h-screen">
@@ -20,7 +27,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
         collapsed={collapsed}
         trigger={null}
         width={220}
-        // className="bg-white shadow-md"
       >
         <Sidebar collapsed={collapsed} />
       </Sider>

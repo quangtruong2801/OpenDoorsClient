@@ -64,6 +64,7 @@ export default function AddRecruitmentModal({
       onOk={handleOk}
       okText={isEdit ? "Cập nhật" : "Thêm mới"}
       width={800}
+      maskClosable={false}
     >
       <Form form={form} layout="vertical">
         <Row gutter={16}>

@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 
 import axios from "../../api/config";
-import AddMemberModal from "../../components/AddMemberModal";
+import AddMemberModal from "../../components/MemberModal";
 import MemberFilter from "../../components/MemberFilter";
 import type { Member, NewMember } from "../../types/Member";
 import type { Management } from "../../types/Management";

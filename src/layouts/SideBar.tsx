@@ -26,8 +26,8 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
       icon: <TeamOutlined />,
       label: "Team",
       children: [
-        { key: "/team/member", label: <Link to="/team/member">Team Members</Link> },
-        { key: "/team/management", label: <Link to="/team/management">Team Management</Link> },
+        { key: "/team/member", label: <Link to="/team/member">Quản lí thành viên</Link> },
+        { key: "/team/management", label: <Link to="/team/management">Quản lí Team</Link> },
       ],
     },
     {
@@ -35,7 +35,7 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
       icon: <SolutionOutlined />,
       label: "Job",
       children: [
-        { key: "/job/management", label: <Link to="/job/management">Job Management</Link> },
+        { key: "/job/management", label: <Link to="/job/management">Quản lí công việc</Link> },
       ],
     },
     {

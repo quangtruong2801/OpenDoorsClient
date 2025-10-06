@@ -25,7 +25,7 @@ type Recruitment = {
   benefits: string;
   email?: string;
   phone?: string;
-  // companyName?: string; // Hiện tại chưa dùng tên công ty
+  // companyName?: string; 
 };
 
 export default function RecruitmentDetail() {

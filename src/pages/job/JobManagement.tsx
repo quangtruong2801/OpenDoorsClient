@@ -10,7 +10,7 @@ import type { ColumnsType } from "antd/es/table";
 
 import api from "../../api/config"; // <-- dùng axios instance
 import type { Job } from "../../types/Job";
-import AddJobModal from "../../components/AddJobModal";
+import AddJobModal from "../../components/JobModal";
 
 export default function JobManagement() {
   const [data, setData] = useState<Job[]>([]);

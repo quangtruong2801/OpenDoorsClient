@@ -11,7 +11,7 @@ import type { ColumnsType } from "antd/es/table";
 
 import api from "../../api/config"; // <-- dùng axios instance
 import type { Recruitment } from "../../types/Recruitment";
-import AddRecruitmentModal from "../../components/AddRecruitmentModal";
+import AddRecruitmentModal from "../../components/RecruitmentModal";
 
 const { Option } = Select;
 
@@ -255,7 +255,7 @@ export default function RecruitmentManagement() {
               </Option>
             ))}
           </Select>
-          <Button
+          {/* <Button
             type="default"
             onClick={() => {
               setSearch("");
@@ -265,7 +265,7 @@ export default function RecruitmentManagement() {
             }}
           >
             Reset
-          </Button>
+          </Button> */}
         </Space>
 
         <Button

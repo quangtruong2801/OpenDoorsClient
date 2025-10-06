@@ -1,4 +1,3 @@
-
 import {
   Modal,
   Form,
@@ -11,7 +10,11 @@ import {
   message,
   Upload,
 } from "antd";
-import { DeleteOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import axios from "../api/config";
@@ -38,8 +41,8 @@ export default function AddMemberModal({
   const [form] = Form.useForm();
   const [teams, setTeams] = useState<{ id: string; teamName: string }[]>([]);
   const [jobs, setJobs] = useState<{ id: string; jobName: string }[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null); // Lưu file tạm
+  const [avatarUrl, setAvatarUrl] = useState<string>(""); // Dùng để hiển thị preview
 
   // Fetch teams & jobs
   useEffect(() => {
@@ -78,36 +81,25 @@ export default function AddMemberModal({
           teamId: teams.find((t) => t.teamName === initialValues.team)?.id,
           avatar: initialValues.avatar,
           avatarPublicId: initialValues.avatarPublicId,
+          password: "",
         });
         setAvatarUrl(initialValues.avatar);
+        setAvatarFile(null); // Reset file tạm
       } else {
         form.resetFields();
         setAvatarUrl("");
+        setAvatarFile(null);
       }
     }
   }, [open, initialValues, form, teams]);
 
-  // Upload avatar
-  const handleAvatarUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    setUploading(true);
-    try {
-      const res = await axios.post("/upload/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const { url, publicId } = res.data;
-      setAvatarUrl(url);
-      form.setFieldsValue({ avatar: url, avatarPublicId: publicId });
-      message.success("Tải ảnh thành công!");
-    } catch (error) {
-      console.error(error);
-      message.error("Tải ảnh thất bại!");
-    } finally {
-      setUploading(false);
-    }
-    return false;
+  // Chọn file avatar (không upload ngay)
+  const handleAvatarSelect = (file: File) => {
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setAvatarUrl(e.target?.result as string);
+    reader.readAsDataURL(file);
+    return false; // Ngăn Upload tự gửi
   };
 
   const handleOk = async () => {
@@ -119,16 +111,41 @@ export default function AddMemberModal({
         return;
       }
 
+      // Upload avatar nếu có file mới
+      let avatarUploadUrl = avatarUrl;
+      let avatarPublicId = form.getFieldValue("avatarPublicId");
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("file", avatarFile);
+        try {
+          const res = await axios.post("/upload/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          avatarUploadUrl = res.data.url;
+          avatarPublicId = res.data.publicId;
+          // message.success("Tải ảnh thành công!");
+        } catch (err) {
+          console.error(err);
+          message.error("Tải ảnh thất bại!");
+          return;
+        }
+      }
+
       const teamObj = teams.find((t) => t.id === values.teamId);
 
       const payload: NewMember = {
         ...values,
-        avatar: avatarUrl,
-        avatarPublicId: form.getFieldValue("avatarPublicId"),
+        ...(values.password && values.password.trim() !== ""
+          ? { password: values.password }
+          : {}),
+        avatar: avatarUploadUrl,
+        avatarPublicId,
         team: teamObj?.teamName || "",
         startDate: dayjs(values.startDate).format("DD-MM-YYYY"),
         birthday: dayjs(values.birthday).format("DD-MM-YYYY"),
-        jobType: Array.isArray(values.jobType) ? values.jobType : [values.jobType],
+        jobType: Array.isArray(values.jobType)
+          ? values.jobType
+          : [values.jobType],
         socials: values.socials.map((s: Social) => ({
           platform: s.platform,
           url: s.url,
@@ -138,6 +155,7 @@ export default function AddMemberModal({
       onSubmit(payload);
       form.resetFields();
       setAvatarUrl("");
+      setAvatarFile(null);
     } catch (err) {
       console.error("Validate error:", err);
       message.error("Điền đầy đủ thông tin hợp lệ!");
@@ -152,21 +170,31 @@ export default function AddMemberModal({
       onCancel={() => {
         form.resetFields();
         setAvatarUrl("");
+        setAvatarFile(null);
         onCancel();
       }}
       destroyOnHidden
       okText="Lưu"
       cancelText="Hủy"
       width={900}
+      maskClosable={false}
     >
       <Form layout="vertical" form={form}>
         <Row gutter={16}>
           <Col xs={24} sm={12}>
-            <Form.Item name="name" label="Họ và tên" rules={[{ required: true }]}>
+            <Form.Item
+              name="name"
+              label="Họ và tên"
+              rules={[{ required: true }]}
+            >
               <Input placeholder="Nhập họ tên" />
             </Form.Item>
 
-            <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[{ required: true, type: "email" }]}
+            >
               <Input placeholder="Nhập email" />
             </Form.Item>
 
@@ -184,8 +212,12 @@ export default function AddMemberModal({
               rules={[{ required: true, message: "Vui lòng tải ảnh đại diện" }]}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <Upload accept="image/*" beforeUpload={handleAvatarUpload} showUploadList={false}>
-                  <Button icon={<UploadOutlined />} loading={uploading}>
+                <Upload
+                  accept="image/*"
+                  beforeUpload={handleAvatarSelect}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />}>
                     {avatarUrl ? "Thay ảnh" : "Chọn ảnh từ máy"}
                   </Button>
                 </Upload>
@@ -205,11 +237,19 @@ export default function AddMemberModal({
               </div>
             </Form.Item>
 
-            <Form.Item name="birthday" label="Ngày sinh" rules={[{ required: true }]}>
+            <Form.Item
+              name="birthday"
+              label="Ngày sinh"
+              rules={[{ required: true }]}
+            >
               <DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
             </Form.Item>
 
-            <Form.Item name="hobbies" label="Sở thích" rules={[{ required: true }]}>
+            <Form.Item
+              name="hobbies"
+              label="Sở thích"
+              rules={[{ required: true }]}
+            >
               <Input.TextArea placeholder="Nhập sở thích" rows={2} />
             </Form.Item>
           </Col>
@@ -220,50 +260,75 @@ export default function AddMemberModal({
                 {(fields, { add, remove }) => (
                   <>
                     {fields.map(({ key, name, ...restField }) => (
-                      <Row key={`row-${key}`} gutter={[8, 8]} align="middle">
-                        <Col xs={24} sm={8}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, "platform"]}
-                            rules={[{ required: true }]}
-                          >
-                            <Select placeholder="Chọn nền tảng">
-                              {SOCIAL_OPTIONS.map((s) => {
-                                const Icon = s.icon;
-                                return (
-                                  <Option key={`social-${key}-${s.key}`} value={s.key}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                      <Icon color={s.color} />
-                                      {s.label}
-                                    </div>
-                                  </Option>
-                                );
-                              })}
-                            </Select>
-                          </Form.Item>
-                        </Col>
+                      <div
+                        key={key}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginBottom: 8, // khoảng cách giữa các dòng
+                        }}
+                      >
+                        {/* Nền tảng */}
+                        <Form.Item
+                          {...restField}
+                          name={[name, "platform"]}
+                          rules={[{ required: true }]}
+                          style={{ flex: 2, marginBottom: 0 }}
+                        >
+                          <Select placeholder="Chọn nền tảng">
+                            {SOCIAL_OPTIONS.map((s) => {
+                              const Icon = s.icon;
+                              return (
+                                <Select.Option
+                                  key={`${key}-${s.key}`}
+                                  value={s.key}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                    }}
+                                  >
+                                    <Icon color={s.color} />
+                                    {s.label}
+                                  </div>
+                                </Select.Option>
+                              );
+                            })}
+                          </Select>
+                        </Form.Item>
 
-                        <Col xs={24} sm={14}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, "url"]}
-                            rules={[{ required: true, type: "url" }]}
-                          >
-                            <Input placeholder="Nhập link" />
-                          </Form.Item>
-                        </Col>
+                        {/* Link */}
+                        <Form.Item
+                          {...restField}
+                          name={[name, "url"]}
+                          rules={[{ required: true, type: "url" }]}
+                          style={{ flex: 3, marginBottom: 0 }}
+                        >
+                          <Input placeholder="Nhập link" />
+                        </Form.Item>
 
-                        <Col xs={24} sm={2} style={{ textAlign: "center" }}>
-                          <DeleteOutlined
-                            onClick={() => remove(name)}
-                            style={{ color: "red", cursor: "pointer" }}
-                          />
-                        </Col>
-                      </Row>
+                        {/* Nút xóa */}
+                        <DeleteOutlined
+                          onClick={() => remove(name)}
+                          style={{
+                            color: "red",
+                            cursor: "pointer",
+                            fontSize: 20,
+                          }}
+                        />
+                      </div>
                     ))}
 
                     <Form.Item>
-                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                      <Button
+                        type="dashed"
+                        onClick={() => add()}
+                        block
+                        icon={<PlusOutlined />}
+                      >
                         Thêm mạng xã hội
                       </Button>
                     </Form.Item>
@@ -282,7 +347,11 @@ export default function AddMemberModal({
               </Select>
             </Form.Item>
 
-            <Form.Item name="type" label="Hình thức" rules={[{ required: true }]}>
+            <Form.Item
+              name="type"
+              label="Hình thức"
+              rules={[{ required: true }]}
+            >
               <Select placeholder="Chọn hình thức">
                 <Option value="fulltime">Full Time</Option>
                 <Option value="parttime">Part Time</Option>
@@ -290,7 +359,11 @@ export default function AddMemberModal({
               </Select>
             </Form.Item>
 
-            <Form.Item name="jobType" label="Công việc" rules={[{ required: true }]}>
+            <Form.Item
+              name="jobType"
+              label="Công việc"
+              rules={[{ required: true }]}
+            >
               <Select mode="multiple" placeholder="Chọn công việc">
                 {jobs.map((job) => (
                   <Option key={job.id} value={job.jobName}>
@@ -300,7 +373,11 @@ export default function AddMemberModal({
               </Select>
             </Form.Item>
 
-            <Form.Item name="startDate" label="Ngày bắt đầu" rules={[{ required: true }]}>
+            <Form.Item
+              name="startDate"
+              label="Ngày bắt đầu"
+              rules={[{ required: true }]}
+            >
               <DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
             </Form.Item>
           </Col>
