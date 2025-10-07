@@ -32,7 +32,8 @@ export default function Home() {
     return <Spin size="large" style={{ display: "block", margin: "100px auto" }} />;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 mx-[20px]">
+
       <h1 className="text-4xl font-bold mb-8 text-center text-blue-600">
         Danh sách tuyển dụng
       </h1>
@@ -42,8 +43,8 @@ export default function Home() {
           const isExpired = dayjs(job.deadline).isBefore(dayjs());
 
           return (
-            <Col xs={24} sm={12} md={8} key={job.id}>
-              <div className="rounded-3xl border border-gray-200 shadow-lg overflow-hidden transition-transform bg-white hover:scale-105">
+            <Col xs={24} sm={12} md={8} lg={6} key={job.id}>
+              <div className="h-full flex flex-col rounded-3xl border border-gray-200 shadow-lg overflow-hidden transition-transform bg-white hover:scale-105">
                 <Card
                   hoverable
                   style={{ border: "none", borderRadius: "1rem" }}

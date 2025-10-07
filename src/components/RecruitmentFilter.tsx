@@ -4,29 +4,29 @@ const { Option } = Select;
 
 type Props = {
   data: {
-    companyName: string;
+    location: string;
     salary: string;
     title: string;
   }[];
   search?: string;
-  company?: string;
+  location?: string;    
   salary?: string;
   onSearchChange?: (value: string) => void;
-  onCompanyChange?: (value: string) => void;
+  onLocationChange?: (value: string) => void;
   onSalaryChange?: (value: string) => void;
 };
 
 export default function RecruitmentFilter({
   data,
   search = "",
-  company = "",
+  location = "",
   salary = "",
   onSearchChange,
-  onCompanyChange,
+  onLocationChange,
   onSalaryChange,
 }: Props) {
-  // Tạo danh sách company và salary có sẵn từ data
-  const companyList = Array.from(new Set(data.map((d) => d.companyName))).filter(Boolean);
+  //tạo danh sách
+  const locationList = Array.from(new Set(data.map((d) => d.location))).filter(Boolean);
   const salaryList = Array.from(new Set(data.map((d) => d.salary))).filter(Boolean);
 
   return (
@@ -39,15 +39,15 @@ export default function RecruitmentFilter({
       />
 
       <Select
-        placeholder="Chọn công ty"
-        value={company || undefined}
-        onChange={(value) => onCompanyChange?.(value || "")}
+        placeholder="Chọn địa điểm" 
+        value={location || undefined}
+        onChange={(value) => onLocationChange?.(value || "")}
         allowClear
         style={{ width: 160 }}
       >
-        {companyList.map((c) => (
-          <Option key={c} value={c}>
-            {c}
+        {locationList.map((l) => (
+          <Option key={l} value={l}>
+            {l}
           </Option>
         ))}
       </Select>
@@ -69,7 +69,7 @@ export default function RecruitmentFilter({
       <Button
         onClick={() => {
           onSearchChange?.("");
-          onCompanyChange?.("");
+          onLocationChange?.(""); 
           onSalaryChange?.("");
         }}
       >

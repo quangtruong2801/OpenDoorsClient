@@ -1,7 +1,11 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Table, Space, Button, Popconfirm, message, Tag } from "antd";
-import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 
@@ -69,7 +73,9 @@ export default function TeamMember() {
   // Filter data client-side
   const filteredData = useMemo(() => {
     return data.filter((member) => {
-      const matchesSearch = member.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = member.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
       const matchesType = type ? member.type === type : true;
       const matchesJobType = jobType ? member.jobType.includes(jobType) : true;
       const matchesTeam = team
@@ -85,13 +91,31 @@ export default function TeamMember() {
 
   // Handlers filter
   const handleSearchChange = (v: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), search: v });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      search: v,
+    });
   const handleTypeChange = (v?: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), type: v || "" });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      type: v || "",
+    });
   const handleJobTypeChange = (v?: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), jobType: v || "" });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      jobType: v || "",
+    });
   const handleTeamChange = (v?: string) =>
-    setSearchParams({ ...Object.fromEntries(searchParams.entries()), team: v || "" });
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      team: v || "",
+    });
+
+  // Reset toàn bộ filter
+  const handleResetFilters = () => {
+    setSearchParams({});
+    setPage(1);
+  };
 
   // Edit member
   const handleEdit = (member: Member) => {
@@ -103,11 +127,11 @@ export default function TeamMember() {
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`/members/${id}`);
-      message.success("🗑️ Xóa thành viên thành công!");
+      message.success("Xóa thành viên thành công!");
       fetchMembers();
     } catch (err) {
       console.error(err);
-      message.error("❌ Có lỗi khi xóa!");
+      message.error("Có lỗi khi xóa!");
     }
   };
 
@@ -116,17 +140,17 @@ export default function TeamMember() {
     try {
       if (editingMember) {
         await axios.put(`/members/${editingMember.id}`, memberData);
-        message.success("✅ Cập nhật thành viên thành công!");
+        message.success("Cập nhật thành viên thành công!");
       } else {
         await axios.post("/members", memberData);
-        message.success("✅ Thêm thành viên thành công!");
+        message.success("Thêm thành viên thành công!");
       }
       setIsModalOpen(false);
       setEditingMember(null);
       fetchMembers();
     } catch (err) {
       console.error(err);
-      message.error("❌ Có lỗi xảy ra!");
+      message.error("Có lỗi xảy ra!");
     }
   };
 
@@ -141,7 +165,12 @@ export default function TeamMember() {
         <img
           src={url}
           alt="avatar"
-          style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            objectFit: "cover",
+          }}
         />
       ),
     },
@@ -173,7 +202,9 @@ export default function TeamMember() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1"
                 >
-                  {IconComponent && <IconComponent style={{ color, fontSize: 16 }} />}
+                  {IconComponent && (
+                    <IconComponent style={{ color, fontSize: 16 }} />
+                  )}
                   <span>{s.url}</span>
                 </a>
               );
@@ -183,7 +214,12 @@ export default function TeamMember() {
           "—"
         ),
     },
-    { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate", width: 150 },
+    {
+      title: "Ngày bắt đầu",
+      dataIndex: "startDate",
+      key: "startDate",
+      width: 150,
+    },
     { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
     {
       title: "Công việc",
@@ -218,7 +254,10 @@ export default function TeamMember() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
+            <Button
+              type="text"
+              icon={<DeleteOutlined className="text-red-500" />}
+            />
           </Popconfirm>
         </Space>
       ),
@@ -228,20 +267,29 @@ export default function TeamMember() {
   return (
     <div className="p-4 bg-white rounded shadow">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <div className="flex-1 min-w-[300px]">
-          <MemberFilter
-            search={search}
-            type={type}
-            jobType={jobType}
-            teamId={team}
-            jobList={jobList}
-            teamList={teamList}
-            onSearchChange={handleSearchChange}
-            onTypeChange={handleTypeChange}
-            onJobTypeChange={handleJobTypeChange}
-            onTeamChange={handleTeamChange}
-          />
-        </div>
+        <Space>
+          <div className="flex-1 min-w-[300px]">
+            <MemberFilter
+              search={search}
+              type={type}
+              jobType={jobType}
+              teamId={team}
+              jobList={jobList}
+              teamList={teamList}
+              onSearchChange={handleSearchChange}
+              onTypeChange={handleTypeChange}
+              onJobTypeChange={handleJobTypeChange}
+              onTeamChange={handleTeamChange}
+            />
+          </div>
+          {/* Reset */}
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleResetFilters}
+            className="whitespace-nowrap"
+          >
+          </Button>
+        </Space>
 
         <Button
           type="primary"

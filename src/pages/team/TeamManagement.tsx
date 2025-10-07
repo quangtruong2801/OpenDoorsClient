@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Table, Button, message, Space, Popconfirm } from "antd";
-import { EditOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 
@@ -48,7 +53,7 @@ export default function TeamManagement() {
       setData(filtered.slice((page - 1) * pageSize, page * pageSize));
     } catch (err) {
       console.error(err);
-      message.error("❌ Lỗi khi tải danh sách team");
+      message.error("Lỗi khi tải danh sách team");
     } finally {
       setLoading(false);
     }
@@ -58,17 +63,21 @@ export default function TeamManagement() {
     fetchData();
   }, [fetchData]);
 
-  // ➕ Thêm / ✏️ Sửa team
+  // Reset toàn bộ filter
+  const handleResetFilters = () => {
+    setSearchParams({});
+    setPage(1);
+  };
+
+  // Add/Edit
   const handleSaveTeam = async (values: { teamName: string }) => {
     try {
       if (editingTeam) {
-        // ✏️ Cập nhật team
         await axios.put(`/teams/${editingTeam.id}`, values);
-        message.success("✅ Cập nhật team thành công!");
+        message.success("Cập nhật team thành công!");
       } else {
-        // ➕ Thêm team mới
         await axios.post("/teams", values);
-        message.success("✅ Thêm team thành công!");
+        message.success("Thêm team thành công!");
       }
 
       setIsModalOpen(false);
@@ -76,29 +85,29 @@ export default function TeamManagement() {
       fetchData();
     } catch (err) {
       console.error(err);
-      message.error("❌ Lưu team thất bại");
+      message.error("Lưu team thất bại");
     }
   };
 
-  // ✏️ Edit team
+  //Edit team
   const handleEdit = (record: Management) => {
     setEditingTeam(record);
     setIsModalOpen(true);
   };
 
-  // 🗑️ Delete team
+  //Delete team
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`/teams/${id}`);
-      message.success("🗑️ Xóa thành công!");
+      message.success("Xóa thành công!");
       fetchData();
     } catch (err) {
       console.error(err);
-      message.error("❌ Có lỗi khi xóa!");
+      message.error("Có lỗi khi xóa!");
     }
   };
 
-  // 🔍 Handlers filter
+  //Handlers filter
   const handleSearchChange = (v: string) =>
     setSearchParams({
       ...Object.fromEntries(searchParams.entries()),
@@ -111,7 +120,7 @@ export default function TeamManagement() {
       memberFilter: v,
     });
 
-  // 📊 Cột bảng
+  //Cột bảng
   const columns: ColumnsType<Management> = [
     { title: "Team Name", dataIndex: "teamName", key: "teamName", width: 200 },
     { title: "Members", dataIndex: "members", key: "members", width: 150 },
@@ -133,7 +142,10 @@ export default function TeamManagement() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
+            <Button
+              type="text"
+              icon={<DeleteOutlined className="text-red-500" />}
+            />
           </Popconfirm>
         </Space>
       ),
@@ -143,14 +155,23 @@ export default function TeamManagement() {
   return (
     <div className="p-4 bg-white rounded shadow">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <div className="flex-1 min-w-[300px]">
-          <TeamFilter
-            search={search}
-            memberFilter={memberFilter}
-            onSearchChange={handleSearchChange}
-            onMemberFilterChange={handleMemberFilterChange}
-          />
-        </div>
+        <Space>
+          <div className="flex-1 min-w-[300px]">
+            <TeamFilter
+              search={search}
+              memberFilter={memberFilter}
+              onSearchChange={handleSearchChange}
+              onMemberFilterChange={handleMemberFilterChange}
+            />
+          </div>
+          {/* Reset */}
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleResetFilters}
+            className="whitespace-nowrap"
+          >
+          </Button>
+        </Space>
 
         <Button
           type="primary"

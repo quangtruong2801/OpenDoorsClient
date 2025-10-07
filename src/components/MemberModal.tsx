@@ -177,7 +177,7 @@ export default function AddMemberModal({
       okText="Lưu"
       cancelText="Hủy"
       width={900}
-      maskClosable={false}
+      // maskClosable={false}
     >
       <Form layout="vertical" form={form}>
         <Row gutter={16}>
