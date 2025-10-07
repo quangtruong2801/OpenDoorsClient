@@ -50,6 +50,7 @@ export default function AddTeamModal({
       }}
       okText={isEdit ? "Cập nhật" : "Thêm"}
       cancelText="Hủy"
+      maskClosable={false}
     >
       <Form form={form} layout="vertical">
         <Form.Item

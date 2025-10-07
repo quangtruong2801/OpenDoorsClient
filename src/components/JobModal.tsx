@@ -48,6 +48,7 @@ export default function AddJobModal({
       destroyOnHidden
       okText="Lưu"
       cancelText="Hủy"
+      maskClosable={false}
     >
       <Form layout="vertical" form={form}>
         <Form.Item

@@ -12,6 +12,7 @@ export type Member = {
   jobType: string[];
   team: string;
   teamId: string;
+  password?: string;
 };
 
 export type NewMember = Omit<Member, "id">;
