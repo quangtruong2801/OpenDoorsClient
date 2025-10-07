@@ -3,22 +3,13 @@ import { Table, Space, Button, Popconfirm, message, Tag, Input, Select } from "a
 import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
+import useDebounce from "../../hooks/useDebounce";
 
 import axios from "../../api/config";
 import AddMemberModal from "../../components/MemberModal";
 import type { Member, NewMember } from "../../types/Member";
 import type { Management } from "../../types/Management";
 import { SOCIAL_OPTIONS } from "../../constants/socials";
-
-// Hook debounce
-function useDebounce<T>(value: T, delay = 500): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-}
 
 const { Option } = Select;
 
@@ -28,14 +19,18 @@ export default function TeamMember() {
   const [total, setTotal] = useState(0);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [typeFilter, setTypeFilter] = useState(searchParams.get("type") || "");
-  const [jobFilter, setJobFilter] = useState(searchParams.get("jobType") || "");
-  const [teamFilter, setTeamFilter] = useState(searchParams.get("team") || "");
+
+  const [filters, setFilters] = useState({
+    search: searchParams.get("search") || "",
+    type: searchParams.get("type") || "",
+    jobType: searchParams.get("jobType") || "",
+    team: searchParams.get("team") || "",
+  });
+
+  const debouncedFilters = useDebounce(filters, 500);
+
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [pageSize, setPageSize] = useState(Number(searchParams.get("pageSize")) || 10);
-
-  const debouncedSearch = useDebounce(search, 500);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -48,14 +43,14 @@ export default function TeamMember() {
   // URL sync
   useEffect(() => {
     const params: Record<string, string> = {};
-    if (search) params.search = search;
-    if (typeFilter) params.type = typeFilter;
-    if (jobFilter) params.jobType = jobFilter;
-    if (teamFilter) params.team = teamFilter;
+    if (filters.search) params.search = filters.search;
+    if (filters.type) params.type = filters.type;
+    if (filters.jobType) params.jobType = filters.jobType;
+    if (filters.team) params.team = filters.team;
     params.page = String(page);
     params.pageSize = String(pageSize);
     setSearchParams(params);
-  }, [search, typeFilter, jobFilter, teamFilter, page, pageSize, setSearchParams]);
+  }, [filters, page, pageSize, setSearchParams]);
 
   // Fetch job & team list
   useEffect(() => {
@@ -78,15 +73,14 @@ export default function TeamMember() {
     try {
       const res = await axios.get("/members/filter", {
         params: {
-          search: debouncedSearch || undefined,
-          type: typeFilter || undefined,
-          jobType: jobFilter || undefined,
-          team: teamFilter || undefined,
+          search: debouncedFilters.search || undefined,
+          type: debouncedFilters.type || undefined,
+          jobType: debouncedFilters.jobType || undefined,
+          team: debouncedFilters.team || undefined,
           page,
           pageSize,
         },
       });
-
       const { data: items, total } = res.data;
       setData(items);
       setTotal(total);
@@ -96,7 +90,7 @@ export default function TeamMember() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, typeFilter, jobFilter, teamFilter, page, pageSize]);
+  }, [debouncedFilters, page, pageSize]);
 
   useEffect(() => {
     fetchMembers();
@@ -231,14 +225,14 @@ export default function TeamMember() {
           <Input
             placeholder="Tìm theo tên"
             prefix={<SearchOutlined />}
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            value={filters.search}
+            onChange={(e) => { setFilters(prev => ({ ...prev, search: e.target.value })); setPage(1); }}
             style={{ width: 200 }}
           />
           <Select
             placeholder="Chọn hình thức"
-            value={typeFilter || undefined}
-            onChange={(v) => { setTypeFilter(v || ""); setPage(1); }}
+            value={filters.type || undefined}
+            onChange={(v) => { setFilters(prev => ({ ...prev, type: v || "" })); setPage(1); }}
             allowClear
             style={{ width: 150 }}
           >
@@ -248,8 +242,8 @@ export default function TeamMember() {
           </Select>
           <Select
             placeholder="Chọn công việc"
-            value={jobFilter || undefined}
-            onChange={(v) => { setJobFilter(v || ""); setPage(1); }}
+            value={filters.jobType || undefined}
+            onChange={(v) => { setFilters(prev => ({ ...prev, jobType: v || "" })); setPage(1); }}
             allowClear
             style={{ width: 160 }}
           >
@@ -259,8 +253,8 @@ export default function TeamMember() {
           </Select>
           <Select
             placeholder="Chọn team"
-            value={teamFilter || undefined}
-            onChange={(v) => { setTeamFilter(v || ""); setPage(1); }}
+            value={filters.team || undefined}
+            onChange={(v) => { setFilters(prev => ({ ...prev, team: v || "" })); setPage(1); }}
             allowClear
             style={{ width: 160 }}
           >
@@ -268,7 +262,7 @@ export default function TeamMember() {
               <Option key={t.id} value={t.id}>{t.teamName}</Option>
             ))}
           </Select>
-          <Button icon={<ReloadOutlined />} onClick={() => { setSearch(""); setTypeFilter(""); setJobFilter(""); setTeamFilter(""); setPage(1); }} />
+          <Button icon={<ReloadOutlined />} onClick={() => { setFilters({ search: "", type: "", jobType: "", team: "" }); setPage(1); }} />
         </Space>
 
         <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingMember(null); setIsModalOpen(true); }}>

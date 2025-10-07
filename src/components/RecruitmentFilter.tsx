@@ -3,42 +3,37 @@ import { Input, Select, Space, Button } from "antd";
 const { Option } = Select;
 
 type Props = {
-  search?: string;
-  location?: string;    
-  salary?: string;
+  filters: {
+    search: string;
+    location: string;
+    salary: string;
+  };
   locationList: string[];
   salaryList: string[];
-  onSearchChange?: (value: string) => void;
-  onLocationChange?: (value: string) => void;
-  onSalaryChange?: (value: string) => void;
+  onFiltersChange: (changed: Partial<Props["filters"]>) => void;
   onReset?: () => void;
 };
 
 export default function RecruitmentFilter({
-  search = "",
-  location = "",
-  salary = "",
+  filters,
   locationList,
   salaryList,
-  onSearchChange,
-  onLocationChange,
-  onSalaryChange,
+  onFiltersChange,
   onReset,
 }: Props) {
-
   return (
     <Space wrap>
       <Input
         placeholder="Tìm theo tiêu đề"
-        value={search}
-        onChange={(e) => onSearchChange?.(e.target.value)}
+        value={filters.search}
+        onChange={(e) => onFiltersChange({ search: e.target.value })}
         style={{ width: 200 }}
       />
 
       <Select
-        placeholder="Chọn địa điểm" 
-        value={location || undefined}
-        onChange={(value) => onLocationChange?.(value || "")}
+        placeholder="Chọn địa điểm"
+        value={filters.location || undefined}
+        onChange={(value) => onFiltersChange({ location: value || "" })}
         allowClear
         style={{ width: 160 }}
       >
@@ -51,8 +46,8 @@ export default function RecruitmentFilter({
 
       <Select
         placeholder="Chọn mức lương"
-        value={salary || undefined}
-        onChange={(value) => onSalaryChange?.(value || "")}
+        value={filters.salary || undefined}
+        onChange={(value) => onFiltersChange({ salary: value || "" })}
         allowClear
         style={{ width: 140 }}
       >
