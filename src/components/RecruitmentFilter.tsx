@@ -3,31 +3,28 @@ import { Input, Select, Space, Button } from "antd";
 const { Option } = Select;
 
 type Props = {
-  data: {
-    location: string;
-    salary: string;
-    title: string;
-  }[];
   search?: string;
   location?: string;    
   salary?: string;
+  locationList: string[];
+  salaryList: string[];
   onSearchChange?: (value: string) => void;
   onLocationChange?: (value: string) => void;
   onSalaryChange?: (value: string) => void;
+  onReset?: () => void;
 };
 
 export default function RecruitmentFilter({
-  data,
   search = "",
   location = "",
   salary = "",
+  locationList,
+  salaryList,
   onSearchChange,
   onLocationChange,
   onSalaryChange,
+  onReset,
 }: Props) {
-  //tạo danh sách
-  const locationList = Array.from(new Set(data.map((d) => d.location))).filter(Boolean);
-  const salaryList = Array.from(new Set(data.map((d) => d.salary))).filter(Boolean);
 
   return (
     <Space wrap>
@@ -66,15 +63,7 @@ export default function RecruitmentFilter({
         ))}
       </Select>
 
-      <Button
-        onClick={() => {
-          onSearchChange?.("");
-          onLocationChange?.(""); 
-          onSalaryChange?.("");
-        }}
-      >
-        Reset
-      </Button>
+      <Button onClick={onReset}>Reset</Button>
     </Space>
   );
 }

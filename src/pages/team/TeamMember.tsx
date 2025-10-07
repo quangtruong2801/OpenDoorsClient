@@ -1,312 +1,284 @@
-import { useState, useEffect, useMemo } from "react";
-import { Table, Space, Button, Popconfirm, message, Tag } from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-} from "@ant-design/icons";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Table, Space, Button, Popconfirm, message, Tag, Input, Select } from "antd";
+import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 
 import axios from "../../api/config";
 import AddMemberModal from "../../components/MemberModal";
-import MemberFilter from "../../components/MemberFilter";
 import type { Member, NewMember } from "../../types/Member";
 import type { Management } from "../../types/Management";
 import { SOCIAL_OPTIONS } from "../../constants/socials";
 
-export default function TeamMember() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const search = searchParams.get("search") || "";
-  const type = searchParams.get("type") || "";
-  const jobType = searchParams.get("jobType") || "";
-  const team = searchParams.get("team") || "";
+// Hook debounce
+function useDebounce<T>(value: T, delay = 500): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
 
+const { Option } = Select;
+
+export default function TeamMember() {
   const [data, setData] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [typeFilter, setTypeFilter] = useState(searchParams.get("type") || "");
+  const [jobFilter, setJobFilter] = useState(searchParams.get("jobType") || "");
+  const [teamFilter, setTeamFilter] = useState(searchParams.get("team") || "");
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+  const [pageSize, setPageSize] = useState(Number(searchParams.get("pageSize")) || 10);
+
+  const debouncedSearch = useDebounce(search, 500);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [teamList, setTeamList] = useState<Management[]>([]);
-  const [jobList, setJobList] = useState<{ id: string; jobName: string }[]>([]);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+
+  const [jobList, setJobList] = useState<{ id: string; jobName: string }[]>([]);
+  const [teamList, setTeamList] = useState<Management[]>([]);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // Fetch jobs & teams
+  // URL sync
   useEffect(() => {
-    const fetchData = async () => {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    if (typeFilter) params.type = typeFilter;
+    if (jobFilter) params.jobType = jobFilter;
+    if (teamFilter) params.team = teamFilter;
+    params.page = String(page);
+    params.pageSize = String(pageSize);
+    setSearchParams(params);
+  }, [search, typeFilter, jobFilter, teamFilter, page, pageSize, setSearchParams]);
+
+  // Fetch job & team list
+  useEffect(() => {
+    const fetchMeta = async () => {
       try {
-        const [jobsRes, teamsRes] = await Promise.all([
-          axios.get("/jobs"),
-          axios.get("/teams"),
-        ]);
+        const [jobsRes, teamsRes] = await Promise.all([axios.get("/jobs"), axios.get("/teams")]);
         setJobList(jobsRes.data);
         setTeamList(teamsRes.data);
       } catch (err) {
-        console.error("❌ Lỗi fetch jobs/teams:", err);
+        console.error(err);
+        message.error("Không tải được danh sách công việc hoặc team!");
       }
     };
-    fetchData();
+    fetchMeta();
   }, []);
 
   // Fetch members
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/members");
-      setData(res.data);
+      const res = await axios.get("/members/filter", {
+        params: {
+          search: debouncedSearch || undefined,
+          type: typeFilter || undefined,
+          jobType: jobFilter || undefined,
+          team: teamFilter || undefined,
+          page,
+          pageSize,
+        },
+      });
+
+      const { data: items, total } = res.data;
+      setData(items);
+      setTotal(total);
     } catch (err) {
       console.error(err);
-      message.error("Không tải được danh sách thành viên!");
+      message.error("Lỗi tải danh sách thành viên!");
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, typeFilter, jobFilter, teamFilter, page, pageSize]);
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+  }, [fetchMembers]);
 
-  // Filter data client-side
-  const filteredData = useMemo(() => {
-    return data.filter((member) => {
-      const matchesSearch = member.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
-      const matchesType = type ? member.type === type : true;
-      const matchesJobType = jobType ? member.jobType.includes(jobType) : true;
-      const matchesTeam = team
-        ? teamList.find((t) => t.id === team)?.teamName === member.team
-        : true;
-      return matchesSearch && matchesType && matchesJobType && matchesTeam;
-    });
-  }, [data, search, type, jobType, team, teamList]);
-
-  useEffect(() => {
-    setTotal(filteredData.length);
-  }, [filteredData]);
-
-  // Handlers filter
-  const handleSearchChange = (v: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      search: v,
-    });
-  const handleTypeChange = (v?: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      type: v || "",
-    });
-  const handleJobTypeChange = (v?: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      jobType: v || "",
-    });
-  const handleTeamChange = (v?: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      team: v || "",
-    });
-
-  // Reset toàn bộ filter
-  const handleResetFilters = () => {
-    setSearchParams({});
-    setPage(1);
-  };
-
-  // Edit member
-  const handleEdit = (member: Member) => {
-    setEditingMember(member);
-    setIsModalOpen(true);
-  };
-
-  // Delete member
-  const handleDelete = async (id: string) => {
+  // Handlers
+  const handleAddMember = async (values: NewMember) => {
     try {
-      await axios.delete(`/members/${id}`);
-      message.success("Xóa thành viên thành công!");
+      await axios.post("/members", values);
+      message.success("Thêm thành viên thành công!");
+      setIsModalOpen(false);
       fetchMembers();
     } catch (err) {
       console.error(err);
-      message.error("Có lỗi khi xóa!");
+      message.error("Thêm thất bại");
     }
   };
 
-  // Add/Edit member
-  const handleSaveMember = async (memberData: NewMember) => {
+  const handleEditMember = async (values: NewMember) => {
+    if (!editingMember) return;
     try {
-      if (editingMember) {
-        await axios.put(`/members/${editingMember.id}`, memberData);
-        message.success("Cập nhật thành viên thành công!");
-      } else {
-        await axios.post("/members", memberData);
-        message.success("Thêm thành viên thành công!");
-      }
+      await axios.put(`/members/${editingMember.id}`, values);
+      message.success("Cập nhật thành viên thành công!");
       setIsModalOpen(false);
       setEditingMember(null);
       fetchMembers();
     } catch (err) {
       console.error(err);
-      message.error("Có lỗi xảy ra!");
+      message.error("Cập nhật thất bại");
     }
   };
 
-  // Table columns
-  const columns: ColumnsType<Member> = [
-    {
-      title: "Avatar",
-      dataIndex: "avatar",
-      key: "avatar",
-      width: 80,
-      render: (url: string) => (
-        <img
-          src={url}
-          alt="avatar"
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            objectFit: "cover",
-          }}
-        />
-      ),
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await axios.delete(`/members/${id}`);
+        message.success("Xóa thành viên thành công!");
+        fetchMembers();
+      } catch (err) {
+        console.error(err);
+        message.error("Xóa thất bại");
+      }
     },
-    { title: "Họ và tên", dataIndex: "name", key: "name", width: 180 },
-    { title: "Email", dataIndex: "email", key: "email", width: 200 },
-    { title: "Ngày sinh", dataIndex: "birthday", key: "birthday", width: 150 },
-    { title: "Sở thích", dataIndex: "hobbies", key: "hobbies", width: 200 },
-    {
-      title: "Mạng xã hội",
-      dataIndex: "socials",
-      key: "socials",
-      width: 220,
-      render: (socials: { platform: string; url: string }[]) =>
-        socials && socials.length > 0 ? (
-          <Space direction="vertical">
-            {socials.map((s) => {
-              const option = SOCIAL_OPTIONS.find(
-                (o) =>
-                  o.key.toLowerCase() === s.platform.toLowerCase() ||
-                  o.label.toLowerCase() === s.platform.toLowerCase()
-              );
-              const IconComponent = option?.icon;
-              const color = option?.color || "#000";
-              return (
-                <a
-                  key={s.platform + s.url}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1"
-                >
-                  {IconComponent && (
-                    <IconComponent style={{ color, fontSize: 16 }} />
-                  )}
-                  <span>{s.url}</span>
-                </a>
-              );
-            })}
-          </Space>
-        ) : (
-          "—"
-        ),
-    },
-    {
-      title: "Ngày bắt đầu",
-      dataIndex: "startDate",
-      key: "startDate",
-      width: 150,
-    },
-    { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
-    {
-      title: "Công việc",
-      dataIndex: "jobType",
-      key: "jobType",
-      width: 180,
-      render: (jobs: string[]) =>
-        jobs && jobs.length > 0
-          ? jobs.map((job) => (
-              <Tag color="blue" key={job}>
-                {job}
-              </Tag>
-            ))
-          : "—",
-    },
-    { title: "Team", dataIndex: "team", key: "team", width: 150 },
-    {
-      title: "Action",
-      key: "action",
-      width: 120,
-      fixed: "right",
-      render: (_: string, record: Member) => (
-        <Space size="middle">
-          <Button
-            type="text"
-            icon={<EditOutlined className="text-blue-600" />}
-            onClick={() => handleEdit(record)}
+    [fetchMembers]
+  );
+
+  const columns: ColumnsType<Member> = useMemo(
+    () => [
+      {
+        title: "Avatar",
+        dataIndex: "avatar",
+        key: "avatar",
+        width: 80,
+        render: (url: string) => (
+          <img
+            src={url}
+            alt="avatar"
+            style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
           />
-          <Popconfirm
-            title="Xóa thành viên này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button
-              type="text"
-              icon={<DeleteOutlined className="text-red-500" />}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+        ),
+      },
+      { title: "Họ và tên", dataIndex: "name", key: "name", width: 180 },
+      { title: "Email", dataIndex: "email", key: "email", width: 200 },
+      { title: "Ngày sinh", dataIndex: "birthday", key: "birthday", width: 150 },
+      { title: "Sở thích", dataIndex: "hobbies", key: "hobbies", width: 200 },
+      {
+        title: "Mạng xã hội",
+        dataIndex: "socials",
+        key: "socials",
+        width: 220,
+        render: (socials: { platform: string; url: string }[]) =>
+          socials && socials.length > 0 ? (
+            <Space direction="vertical">
+              {socials.map((s) => {
+                const option = SOCIAL_OPTIONS.find(
+                  (o) =>
+                    o.key.toLowerCase() === s.platform.toLowerCase() ||
+                    o.label.toLowerCase() === s.platform.toLowerCase()
+                );
+                const IconComponent = option?.icon;
+                const color = option?.color || "#000";
+                return (
+                  <a
+                    key={s.platform + s.url}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1"
+                  >
+                    {IconComponent && <IconComponent style={{ color, fontSize: 16 }} />}
+                    <span>{s.url}</span>
+                  </a>
+                );
+              })}
+            </Space>
+          ) : (
+            "—"
+          ),
+      },
+      { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate", width: 150 },
+      { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
+      {
+        title: "Công việc",
+        dataIndex: "jobType",
+        key: "jobType",
+        width: 180,
+        render: (jobs: string[]) => (jobs && jobs.length > 0 ? jobs.map((job) => <Tag color="blue" key={job}>{job}</Tag>) : "—"),
+      },
+      { title: "Team", dataIndex: "team", key: "team", width: 150 },
+      {
+        title: "Hành động",
+        key: "action",
+        width: 120,
+        fixed: "right",
+        render: (_: string, record: Member) => (
+          <Space>
+            <Button type="text" icon={<EditOutlined />} onClick={() => { setEditingMember(record); setIsModalOpen(true); }} />
+            <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}>
+              <Button type="text" icon={<DeleteOutlined />} danger />
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [handleDelete]
+  );
 
   return (
     <div className="p-4 bg-white rounded shadow">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <Space>
-          <div className="flex-1 min-w-[300px]">
-            <MemberFilter
-              search={search}
-              type={type}
-              jobType={jobType}
-              teamId={team}
-              jobList={jobList}
-              teamList={teamList}
-              onSearchChange={handleSearchChange}
-              onTypeChange={handleTypeChange}
-              onJobTypeChange={handleJobTypeChange}
-              onTeamChange={handleTeamChange}
-            />
-          </div>
-          {/* Reset */}
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={handleResetFilters}
-            className="whitespace-nowrap"
+        <Space wrap>
+          <Input
+            placeholder="Tìm theo tên"
+            prefix={<SearchOutlined />}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            style={{ width: 200 }}
+          />
+          <Select
+            placeholder="Chọn hình thức"
+            value={typeFilter || undefined}
+            onChange={(v) => { setTypeFilter(v || ""); setPage(1); }}
+            allowClear
+            style={{ width: 150 }}
           >
-          </Button>
+            <Option value="fulltime">Full Time</Option>
+            <Option value="parttime">Part Time</Option>
+            <Option value="intern">Intern</Option>
+          </Select>
+          <Select
+            placeholder="Chọn công việc"
+            value={jobFilter || undefined}
+            onChange={(v) => { setJobFilter(v || ""); setPage(1); }}
+            allowClear
+            style={{ width: 160 }}
+          >
+            {jobList.map((j) => (
+              <Option key={j.id} value={j.jobName}>{j.jobName}</Option>
+            ))}
+          </Select>
+          <Select
+            placeholder="Chọn team"
+            value={teamFilter || undefined}
+            onChange={(v) => { setTeamFilter(v || ""); setPage(1); }}
+            allowClear
+            style={{ width: 160 }}
+          >
+            {teamList.map((t) => (
+              <Option key={t.id} value={t.id}>{t.teamName}</Option>
+            ))}
+          </Select>
+          <Button icon={<ReloadOutlined />} onClick={() => { setSearch(""); setTypeFilter(""); setJobFilter(""); setTeamFilter(""); setPage(1); }} />
         </Space>
 
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingMember(null);
-            setIsModalOpen(true);
-          }}
-          className="whitespace-nowrap"
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingMember(null); setIsModalOpen(true); }}>
           Thêm thành viên
         </Button>
       </div>
 
       <Table
         columns={columns}
-        dataSource={filteredData}
+        dataSource={data}
         rowKey="id"
         loading={loading}
         scroll={{ x: "max-content", y: 600 }}
@@ -316,20 +288,14 @@ export default function TeamMember() {
           total,
           showSizeChanger: true,
           pageSizeOptions,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
+          onChange: (p, ps) => { setPage(p); setPageSize(ps); },
         }}
       />
 
       <AddMemberModal
         open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingMember(null);
-        }}
-        onSubmit={handleSaveMember}
+        onCancel={() => { setIsModalOpen(false); setEditingMember(null); }}
+        onSubmit={editingMember ? handleEditMember : handleAddMember}
         initialValues={editingMember || undefined}
         isEdit={!!editingMember}
       />

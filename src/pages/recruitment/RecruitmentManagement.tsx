@@ -15,6 +15,16 @@ import api from "../../api/config";
 import type { Recruitment } from "../../types/Recruitment";
 import AddRecruitmentModal from "../../components/RecruitmentModal";
 
+// Hook debounce
+function useDebounce<T>(value: T, delay = 500): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 const { Option } = Select;
 
 export default function RecruitmentManagement() {
@@ -22,9 +32,7 @@ export default function RecruitmentManagement() {
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
 
-  // ✅ Lấy search params từ URL
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [locationFilter, setLocationFilter] = useState(
     searchParams.get("location") || ""
@@ -37,13 +45,15 @@ export default function RecruitmentManagement() {
     Number(searchParams.get("pageSize")) || 10
   );
 
+  const debouncedSearch = useDebounce(search, 500);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecruitment, setEditingRecruitment] =
     useState<Recruitment | null>(null);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // Cập nhật URL khi state thay đổi
+  // Cập nhật URL
   useEffect(() => {
     const params: Record<string, string> = {};
     if (search) params.search = search;
@@ -54,32 +64,35 @@ export default function RecruitmentManagement() {
     setSearchParams(params);
   }, [search, locationFilter, salaryFilter, page, pageSize, setSearchParams]);
 
-  // Gọi API
+  // Fetch API filter + pagination
   const fetchRecruitments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<Recruitment[]>("/recruitments");
-      const result = res.data.map((r) => ({
+      const res = await api.get("/recruitments/filter", {
+        params: {
+          keyword: debouncedSearch || undefined,
+          location: locationFilter || undefined,
+          salary: salaryFilter || undefined,
+          page,
+          pageSize,
+        },
+      });
+
+      const { data: items, total } = res.data;
+      const result = items.map((r: Recruitment) => ({
         ...r,
-        deadline: r.deadline ? new Date(r.deadline) : new Date(),
+        deadline: r.deadline ? new Date(r.deadline) : null,
       }));
 
-      const filtered = result.filter(
-        (r) =>
-          r.title.toLowerCase().includes(search.toLowerCase()) &&
-          (locationFilter ? r.location === locationFilter : true) &&
-          (salaryFilter ? r.salary === salaryFilter : true)
-      );
-
-      setTotal(filtered.length);
-      setData(filtered.slice((page - 1) * pageSize, page * pageSize));
+      setData(result);
+      setTotal(total);
     } catch (err) {
       console.error(err);
       message.error("Lỗi tải danh sách tuyển dụng");
     } finally {
       setLoading(false);
     }
-  }, [search, locationFilter, salaryFilter, page, pageSize]);
+  }, [debouncedSearch, locationFilter, salaryFilter, page, pageSize]);
 
   useEffect(() => {
     fetchRecruitments();
@@ -141,12 +154,7 @@ export default function RecruitmentManagement() {
       { title: "Tiêu đề", dataIndex: "title", key: "title", width: 180 },
       { title: "Mức lương", dataIndex: "salary", key: "salary", width: 120 },
       { title: "Địa điểm", dataIndex: "location", key: "location", width: 150 },
-      {
-        title: "Kinh nghiệm",
-        dataIndex: "experience",
-        key: "experience",
-        width: 120,
-      },
+      { title: "Kinh nghiệm", dataIndex: "experience", key: "experience", width: 120 },
       {
         title: "Hạn nộp",
         dataIndex: "deadline",
@@ -154,27 +162,9 @@ export default function RecruitmentManagement() {
         width: 120,
         render: (date: Date) => (date ? dayjs(date).format("DD/MM/YYYY") : ""),
       },
-      {
-        title: "Mô tả công việc",
-        dataIndex: "description",
-        key: "description",
-        width: 250,
-        ellipsis: true,
-      },
-      {
-        title: "Yêu cầu ứng viên",
-        dataIndex: "requirements",
-        key: "requirements",
-        width: 250,
-        ellipsis: true,
-      },
-      {
-        title: "Quyền lợi",
-        dataIndex: "benefits",
-        key: "benefits",
-        width: 250,
-        ellipsis: true,
-      },
+      { title: "Mô tả công việc", dataIndex: "description", key: "description", width: 250, ellipsis: true },
+      { title: "Yêu cầu ứng viên", dataIndex: "requirements", key: "requirements", width: 250, ellipsis: true },
+      { title: "Quyền lợi", dataIndex: "benefits", key: "benefits", width: 250, ellipsis: true },
       {
         title: "Hành động",
         key: "action",
@@ -182,14 +172,7 @@ export default function RecruitmentManagement() {
         fixed: "right",
         render: (_: string, record: Recruitment) => (
           <Space>
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEditingRecruitment(record);
-                setIsModalOpen(true);
-              }}
-            />
+            <Button type="text" icon={<EditOutlined />} onClick={() => { setEditingRecruitment(record); setIsModalOpen(true); }} />
             <Popconfirm
               title="Xóa tin tuyển dụng này?"
               onConfirm={() => handleDelete(record.id)}
@@ -205,15 +188,6 @@ export default function RecruitmentManagement() {
     [handleDelete]
   );
 
-  const locationList = useMemo(
-    () => Array.from(new Set(data.map((d) => d.location))),
-    [data]
-  );
-  const salaryList = useMemo(
-    () => Array.from(new Set(data.map((d) => d.salary))),
-    [data]
-  );
-
   return (
     <div className="p-4 bg-white rounded shadow">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -222,63 +196,42 @@ export default function RecruitmentManagement() {
             placeholder="Tìm theo tiêu đề"
             prefix={<SearchOutlined />}
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             style={{ width: 200 }}
           />
           <Select
             placeholder="Chọn địa điểm"
             value={locationFilter || undefined}
-            onChange={(value) => {
-              setLocationFilter(value || "");
-              setPage(1);
-            }}
+            onChange={(value) => { setLocationFilter(value || ""); setPage(1); }}
             allowClear
             style={{ width: 160 }}
           >
-            {locationList.map((l) => (
-              <Option key={l} value={l}>
-                {l}
-              </Option>
+            {Array.from(new Set(data.map(d => d.location))).map(l => (
+              <Option key={l} value={l}>{l}</Option>
             ))}
           </Select>
           <Select
             placeholder="Chọn mức lương"
             value={salaryFilter || undefined}
-            onChange={(value) => {
-              setSalaryFilter(value || "");
-              setPage(1);
-            }}
+            onChange={(value) => { setSalaryFilter(value || ""); setPage(1); }}
             allowClear
             style={{ width: 140 }}
           >
-            {salaryList.map((s) => (
-              <Option key={s} value={s}>
-                {s}
-              </Option>
+            {Array.from(new Set(data.map(d => d.salary))).map(s => (
+              <Option key={s} value={s}>{s}</Option>
             ))}
           </Select>
           <Button
             icon={<ReloadOutlined />}
             type="default"
-            onClick={() => {
-              setSearch("");
-              setLocationFilter("");
-              setSalaryFilter("");
-              setPage(1);
-            }}
-          ></Button>
+            onClick={() => { setSearch(""); setLocationFilter(""); setSalaryFilter(""); setPage(1); }}
+          />
         </Space>
 
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingRecruitment(null);
-            setIsModalOpen(true);
-          }}
+          onClick={() => { setEditingRecruitment(null); setIsModalOpen(true); }}
         >
           Thêm tin tuyển dụng
         </Button>
@@ -296,22 +249,14 @@ export default function RecruitmentManagement() {
           total,
           showSizeChanger: true,
           pageSizeOptions,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
+          onChange: (p, ps) => { setPage(p); setPageSize(ps); },
         }}
       />
 
       <AddRecruitmentModal
         open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingRecruitment(null);
-        }}
-        onSubmit={
-          editingRecruitment ? handleEditRecruitment : handleAddRecruitment
-        }
+        onCancel={() => { setIsModalOpen(false); setEditingRecruitment(null); }}
+        onSubmit={editingRecruitment ? handleEditRecruitment : handleAddRecruitment}
         initialValues={editingRecruitment || undefined}
         isEdit={!!editingRecruitment}
       />

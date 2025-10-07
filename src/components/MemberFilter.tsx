@@ -4,91 +4,67 @@ import type { Management } from "../types/Management";
 const { Option } = Select;
 
 interface MemberFilterProps {
-  search: string;
-  type: string;
-  jobType: string;
-  teamId: string;
-  jobList: { id?: string; jobName?: string }[]; // id hoặc jobName có thể undefined
+  filters: {
+    search: string;
+    type: string;
+    jobType: string;
+    team: string;
+  };
+  jobList: { id?: string; jobName?: string }[];
   teamList: Management[];
-  onSearchChange: (v: string) => void;
-  onTypeChange: (v: string) => void;
-  onJobTypeChange: (v: string) => void;
-  onTeamChange: (v: string) => void;
+  onChange: (filters: { search: string; type: string; jobType: string; team: string }) => void;
 }
 
-export default function MemberFilter({
-  search,
-  type,
-  jobType,
-  teamId,
-  jobList,
-  teamList,
-  onSearchChange,
-  onTypeChange,
-  onJobTypeChange,
-  onTeamChange,
-}: MemberFilterProps) {
+export default function MemberFilter({ filters, jobList, teamList, onChange }: MemberFilterProps) {
+  const handleChange = (key: keyof typeof filters, value: string) => {
+    onChange({ ...filters, [key]: value });
+  };
+
   return (
     <Space size="middle" className="flex flex-wrap w-full gap-4">
-      {/* Search */}
       <Input
         placeholder="Search..."
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
+        value={filters.search}
+        onChange={(e) => handleChange("search", e.target.value)}
         className="flex-1 min-w-[180px]"
       />
 
-      {/* Type Filter */}
       <Select
         placeholder="Select Type"
-        value={type || undefined}
-        onChange={onTypeChange}
+        value={filters.type || undefined}
+        onChange={(v) => handleChange("type", v)}
         allowClear
         className="flex-1 min-w-[150px]"
       >
-        <Option key="type-fulltime" value="fulltime">
-          Full Time
-        </Option>
-        <Option key="type-parttime" value="parttime">
-          Part Time
-        </Option>
-        <Option key="type-intern" value="intern">
-          Intern
-        </Option>
+        <Option value="fulltime">Full Time</Option>
+        <Option value="parttime">Part Time</Option>
+        <Option value="intern">Intern</Option>
       </Select>
 
-      {/* Job Filter */}
       <Select
         placeholder="Select Job Type"
-        value={jobType || undefined}
-        onChange={onJobTypeChange}
+        value={filters.jobType || undefined}
+        onChange={(v) => handleChange("jobType", v)}
         allowClear
         className="flex-1 min-w-[150px]"
       >
-        {jobList.map((j, index) => (
-          <Option
-            key={j.id ?? `job-${index}`} // fallback nếu id undefined
-            value={j.jobName ?? `job-${index}`} // fallback nếu jobName undefined
-          >
-            {j.jobName ?? `Job ${index + 1}`}
+        {jobList.map((j, idx) => (
+          <Option key={j.id ?? `job-${idx}`} value={j.jobName ?? `job-${idx}`}>
+            {j.jobName ?? `Job ${idx + 1}`}
           </Option>
         ))}
       </Select>
 
-      {/* Team Filter */}
       <Select
         placeholder="Select Team"
-        value={teamId || undefined}
-        onChange={onTeamChange}
+        value={filters.team || undefined}
+        onChange={(v) => handleChange("team", v)}
         allowClear
         className="flex-1 min-w-[180px]"
       >
-        {teamList.map((t, index) => (
-          <Option
-            key={t.id ?? `team-${index}`} // fallback nếu id undefined
-            value={t.id ?? `team-${index}`}
-          >
-            {t.teamName ?? `Team ${index + 1}`}
+        {teamList.map((t, idx) => (
+          <Option key={t.id ?? `team-${idx}`} value={t.id ?? `team-${idx}`}>
+            {t.teamName ?? `Team ${idx + 1}`}
           </Option>
         ))}
       </Select>
