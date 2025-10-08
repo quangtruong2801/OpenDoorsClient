@@ -1,64 +1,67 @@
+import type { FC } from "react";
 import { Input, Select, Space, Button } from "antd";
+import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 
-const { Option } = Select;
-
-type Props = {
+type RecruitmentFilterProps = {
   filters: {
     search: string;
     location: string;
     salary: string;
   };
-  locationList: string[];
-  salaryList: string[];
-  onFiltersChange: (changed: Partial<Props["filters"]>) => void;
-  onReset?: () => void;
+  locations: string[];
+  salaries: string[];
+  onChange: (newFilters: Partial<RecruitmentFilterProps["filters"]>) => void;
+  onReset: () => void;
 };
 
-export default function RecruitmentFilter({
+const RecruitmentFilter: FC<RecruitmentFilterProps> = ({
   filters,
-  locationList,
-  salaryList,
-  onFiltersChange,
+  locations,
+  salaries,
+  onChange,
   onReset,
-}: Props) {
+}) => {
   return (
     <Space wrap>
       <Input
         placeholder="Tìm theo tiêu đề"
+        prefix={<SearchOutlined />}
         value={filters.search}
-        onChange={(e) => onFiltersChange({ search: e.target.value })}
+        onChange={(e) => onChange({ search: e.target.value })}
         style={{ width: 200 }}
       />
 
       <Select
         placeholder="Chọn địa điểm"
         value={filters.location || undefined}
-        onChange={(value) => onFiltersChange({ location: value || "" })}
+        onChange={(v) => onChange({ location: v || "" })}
         allowClear
         style={{ width: 160 }}
       >
-        {locationList.map((l) => (
-          <Option key={l} value={l}>
-            {l}
-          </Option>
+        {locations.map((loc) => (
+          <Select.Option key={loc} value={loc}>
+            {loc}
+          </Select.Option>
         ))}
       </Select>
 
       <Select
         placeholder="Chọn mức lương"
         value={filters.salary || undefined}
-        onChange={(value) => onFiltersChange({ salary: value || "" })}
+        onChange={(v) => onChange({ salary: v || "" })}
         allowClear
         style={{ width: 140 }}
       >
-        {salaryList.map((s) => (
-          <Option key={s} value={s}>
-            {s}
-          </Option>
+        {salaries.map((sal) => (
+          <Select.Option key={sal} value={sal}>
+            {sal}
+          </Select.Option>
         ))}
       </Select>
 
-      <Button onClick={onReset}>Reset</Button>
+      <Button icon={<ReloadOutlined />} onClick={onReset} />
     </Space>
   );
-}
+};
+
+export default RecruitmentFilter;

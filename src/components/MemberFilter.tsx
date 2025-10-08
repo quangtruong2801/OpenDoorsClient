@@ -1,73 +1,73 @@
-import { Input, Select, Space } from "antd";
-import type { Management } from "../types/Management";
-
-const { Option } = Select;
-
-interface MemberFilterProps {
-  filters: {
-    search: string;
-    type: string;
-    jobType: string;
-    team: string;
-  };
-  jobList: { id?: string; jobName?: string }[];
-  teamList: Management[];
-  onChange: (filters: { search: string; type: string; jobType: string; team: string }) => void;
-}
-
-export default function MemberFilter({ filters, jobList, teamList, onChange }: MemberFilterProps) {
-  const handleChange = (key: keyof typeof filters, value: string) => {
-    onChange({ ...filters, [key]: value });
-  };
-
+import { Input, Select, Space, Button } from "antd";
+import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
+import type { FC } from "react";
+type MemberFilterProps = {
+  filters: { search: string; type: string; jobType: string; teamId: string };
+  jobList: { id: string; jobName: string }[];
+  teamList: { id: string; teamName: string }[];
+  onChange: (newFilters: Partial<MemberFilterProps["filters"]>) => void;
+  onReset: () => void;
+};
+const MemberFilter: FC<MemberFilterProps> = ({
+  filters,
+  jobList,
+  teamList,
+  onChange,
+  onReset,
+}) => {
   return (
-    <Space size="middle" className="flex flex-wrap w-full gap-4">
+    <Space wrap>
       <Input
-        placeholder="Search..."
+        placeholder="Tìm theo tên"
+        prefix={<SearchOutlined />}
         value={filters.search}
-        onChange={(e) => handleChange("search", e.target.value)}
-        className="flex-1 min-w-[180px]"
+        onChange={(e) => onChange({ search: e.target.value })}
+        style={{ width: 200 }}
       />
-
       <Select
-        placeholder="Select Type"
+        placeholder="Chọn hình thức"
         value={filters.type || undefined}
-        onChange={(v) => handleChange("type", v)}
+        onChange={(v) => onChange({ type: v || "" })}
         allowClear
-        className="flex-1 min-w-[150px]"
+        style={{ width: 150 }}
       >
-        <Option value="fulltime">Full Time</Option>
-        <Option value="parttime">Part Time</Option>
-        <Option value="intern">Intern</Option>
+        
+        <Select.Option value="fulltime">Full Time</Select.Option>
+        <Select.Option value="parttime">Part Time</Select.Option>
+        <Select.Option value="intern">Intern</Select.Option>
       </Select>
-
       <Select
-        placeholder="Select Job Type"
+        placeholder="Chọn công việc"
         value={filters.jobType || undefined}
-        onChange={(v) => handleChange("jobType", v)}
+        onChange={(v) => onChange({ jobType: v || "" })}
         allowClear
-        className="flex-1 min-w-[150px]"
+        style={{ width: 160 }}
       >
-        {jobList.map((j, idx) => (
-          <Option key={j.id ?? `job-${idx}`} value={j.jobName ?? `job-${idx}`}>
-            {j.jobName ?? `Job ${idx + 1}`}
-          </Option>
+        
+        {jobList.map((j) => (
+          <Select.Option key={j.id} value={j.jobName}>
+            
+            {j.jobName}
+          </Select.Option>
         ))}
       </Select>
-
       <Select
-        placeholder="Select Team"
-        value={filters.team || undefined}
-        onChange={(v) => handleChange("team", v)}
+        placeholder="Chọn team"
+        value={filters.teamId || undefined}
+        onChange={(v) => onChange({ teamId: v || "" })}
         allowClear
-        className="flex-1 min-w-[180px]"
+        style={{ width: 160 }}
       >
-        {teamList.map((t, idx) => (
-          <Option key={t.id ?? `team-${idx}`} value={t.id ?? `team-${idx}`}>
-            {t.teamName ?? `Team ${idx + 1}`}
-          </Option>
+        
+        {teamList.map((t) => (
+          <Select.Option key={t.id} value={t.id}>
+            
+            {t.teamName}
+          </Select.Option>
         ))}
       </Select>
+      <Button icon={<ReloadOutlined />} onClick={onReset} />{" "}
     </Space>
   );
-}
+};
+export default MemberFilter;

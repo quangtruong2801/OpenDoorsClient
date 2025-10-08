@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Table, Button, message, Space, Popconfirm, Input, Select } from "antd";
+import { Table, Button, message, Space, Popconfirm } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
-  SearchOutlined,
-  ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
@@ -15,17 +13,14 @@ import api from "../../api/config";
 import type { Recruitment } from "../../types/Recruitment";
 import AddRecruitmentModal from "../../components/RecruitmentModal";
 import useDebounce from "../../hooks/useDebounce";
-
-const { Option } = Select;
+import RecruitmentFilter from "../../components/RecruitmentFilter";
 
 export default function RecruitmentManagement() {
   const [data, setData] = useState<Recruitment[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
-
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Gom tất cả filter & pagination vào 1 state object
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
     location: searchParams.get("location") || "",
@@ -35,7 +30,6 @@ export default function RecruitmentManagement() {
   });
 
   const debouncedSearch = useDebounce(filters.search, 500);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecruitment, setEditingRecruitment] = useState<Recruitment | null>(null);
 
@@ -52,7 +46,7 @@ export default function RecruitmentManagement() {
     setSearchParams(params);
   }, [filters, setSearchParams]);
 
-  // Fetch API với filters & pagination
+  // Fetch API
   const fetchRecruitments = useCallback(async () => {
     setLoading(true);
     try {
@@ -67,12 +61,12 @@ export default function RecruitmentManagement() {
       });
 
       const { data: items, total } = res.data;
-      const result = items.map((r: Recruitment) => ({
-        ...r,
-        deadline: r.deadline ? new Date(r.deadline) : null,
-      }));
-
-      setData(result);
+      setData(
+        items.map((r: Recruitment) => ({
+          ...r,
+          deadline: r.deadline ? new Date(r.deadline) : null,
+        }))
+      );
       setTotal(total);
     } catch (err) {
       console.error(err);
@@ -86,11 +80,13 @@ export default function RecruitmentManagement() {
     fetchRecruitments();
   }, [fetchRecruitments]);
 
-  // Thêm
+  // CRUD handlers
   const handleAddRecruitment = async (values: Omit<Recruitment, "id">) => {
     try {
-      const payload = { ...values, deadline: values.deadline?.toISOString() || null };
-      await api.post("/recruitments", payload);
+      await api.post("/recruitments", {
+        ...values,
+        deadline: values.deadline?.toISOString() || null,
+      });
       message.success("Thêm tin tuyển dụng thành công!");
       setIsModalOpen(false);
       fetchRecruitments();
@@ -100,12 +96,13 @@ export default function RecruitmentManagement() {
     }
   };
 
-  // Sửa
   const handleEditRecruitment = async (values: Omit<Recruitment, "id">) => {
     if (!editingRecruitment) return;
-    const payload = { ...values, deadline: values.deadline?.toISOString() || null };
     try {
-      await api.put(`/recruitments/${editingRecruitment.id}`, payload);
+      await api.put(`/recruitments/${editingRecruitment.id}`, {
+        ...values,
+        deadline: values.deadline?.toISOString() || null,
+      });
       message.success("Cập nhật tin thành công!");
       setEditingRecruitment(null);
       setIsModalOpen(false);
@@ -116,7 +113,6 @@ export default function RecruitmentManagement() {
     }
   };
 
-  // Xóa
   const handleDelete = useCallback(
     async (id: string) => {
       try {
@@ -152,12 +148,15 @@ export default function RecruitmentManagement() {
         key: "action",
         width: 120,
         fixed: "right",
-        render: (_: string, record: Recruitment) => (
+        render: (_, record) => (
           <Space>
             <Button
               type="text"
               icon={<EditOutlined />}
-              onClick={() => { setEditingRecruitment(record); setIsModalOpen(true); }}
+              onClick={() => {
+                setEditingRecruitment(record);
+                setIsModalOpen(true);
+              }}
             />
             <Popconfirm
               title="Xóa tin tuyển dụng này?"
@@ -177,47 +176,31 @@ export default function RecruitmentManagement() {
   return (
     <div className="p-4 bg-white rounded shadow">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <Space wrap>
-          <Input
-            placeholder="Tìm theo tiêu đề"
-            prefix={<SearchOutlined />}
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-            style={{ width: 200 }}
-          />
-          <Select
-            placeholder="Chọn địa điểm"
-            value={filters.location || undefined}
-            onChange={(value) => setFilters({ ...filters, location: value || "", page: 1 })}
-            allowClear
-            style={{ width: 160 }}
-          >
-            {Array.from(new Set(data.map(d => d.location))).map(l => (
-              <Option key={l} value={l}>{l}</Option>
-            ))}
-          </Select>
-          <Select
-            placeholder="Chọn mức lương"
-            value={filters.salary || undefined}
-            onChange={(value) => setFilters({ ...filters, salary: value || "", page: 1 })}
-            allowClear
-            style={{ width: 140 }}
-          >
-            {Array.from(new Set(data.map(d => d.salary))).map(s => (
-              <Option key={s} value={s}>{s}</Option>
-            ))}
-          </Select>
-          <Button
-            icon={<ReloadOutlined />}
-            type="default"
-            onClick={() => setFilters({ search: "", location: "", salary: "", page: 1, pageSize: filters.pageSize })}
-          />
-        </Space>
+        <RecruitmentFilter
+          filters={filters}
+          locations={Array.from(new Set(data.map((d) => d.location)))}
+          salaries={Array.from(new Set(data.map((d) => d.salary)))}
+          onChange={(newFilters) =>
+            setFilters({ ...filters, ...newFilters, page: 1 })
+          }
+          onReset={() =>
+            setFilters({
+              search: "",
+              location: "",
+              salary: "",
+              page: 1,
+              pageSize: filters.pageSize,
+            })
+          }
+        />
 
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => { setEditingRecruitment(null); setIsModalOpen(true); }}
+          onClick={() => {
+            setEditingRecruitment(null);
+            setIsModalOpen(true);
+          }}
         >
           Thêm tin tuyển dụng
         </Button>
@@ -241,7 +224,10 @@ export default function RecruitmentManagement() {
 
       <AddRecruitmentModal
         open={isModalOpen}
-        onCancel={() => { setIsModalOpen(false); setEditingRecruitment(null); }}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingRecruitment(null);
+        }}
         onSubmit={editingRecruitment ? handleEditRecruitment : handleAddRecruitment}
         initialValues={editingRecruitment || undefined}
         isEdit={!!editingRecruitment}

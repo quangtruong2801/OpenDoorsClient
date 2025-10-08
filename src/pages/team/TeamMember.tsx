@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Table, Space, Button, Popconfirm, message, Tag, Input, Select } from "antd";
-import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import { Table, Space, Button, Popconfirm, message, Tag } from "antd";
+import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 import useDebounce from "../../hooks/useDebounce";
 
 import axios from "../../api/config";
 import AddMemberModal from "../../components/MemberModal";
+import MemberFilter from "../../components/MemberFilter";
+
 import type { Member, NewMember } from "../../types/Member";
 import type { Management } from "../../types/Management";
 import { SOCIAL_OPTIONS } from "../../constants/socials";
-
-const { Option } = Select;
 
 export default function TeamMember() {
   const [data, setData] = useState<Member[]>([]);
@@ -24,7 +24,7 @@ export default function TeamMember() {
     search: searchParams.get("search") || "",
     type: searchParams.get("type") || "",
     jobType: searchParams.get("jobType") || "",
-    team: searchParams.get("team") || "",
+    teamId: searchParams.get("teamId") || "",
   });
 
   const debouncedFilters = useDebounce(filters, 500);
@@ -40,19 +40,19 @@ export default function TeamMember() {
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // URL sync
+  // ✅ Sync URL
   useEffect(() => {
     const params: Record<string, string> = {};
     if (filters.search) params.search = filters.search;
     if (filters.type) params.type = filters.type;
     if (filters.jobType) params.jobType = filters.jobType;
-    if (filters.team) params.team = filters.team;
+    if (filters.teamId) params.teamId = filters.teamId;
     params.page = String(page);
     params.pageSize = String(pageSize);
     setSearchParams(params);
   }, [filters, page, pageSize, setSearchParams]);
 
-  // Fetch job & team list
+  // ✅ Fetch job & team list
   useEffect(() => {
     const fetchMeta = async () => {
       try {
@@ -67,7 +67,7 @@ export default function TeamMember() {
     fetchMeta();
   }, []);
 
-  // Fetch members
+  // ✅ Fetch members
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
@@ -76,7 +76,7 @@ export default function TeamMember() {
           search: debouncedFilters.search || undefined,
           type: debouncedFilters.type || undefined,
           jobType: debouncedFilters.jobType || undefined,
-          team: debouncedFilters.team || undefined,
+          teamId: debouncedFilters.teamId || undefined,
           page,
           pageSize,
         },
@@ -96,7 +96,7 @@ export default function TeamMember() {
     fetchMembers();
   }, [fetchMembers]);
 
-  // Handlers
+  // ✅ Handlers
   const handleAddMember = async (values: NewMember) => {
     try {
       await axios.post("/members", values);
@@ -137,6 +137,7 @@ export default function TeamMember() {
     [fetchMembers]
   );
 
+  // ✅ Cấu hình cột
   const columns: ColumnsType<Member> = useMemo(
     () => [
       {
@@ -162,7 +163,7 @@ export default function TeamMember() {
         key: "socials",
         width: 220,
         render: (socials: { platform: string; url: string }[]) =>
-          socials && socials.length > 0 ? (
+          socials?.length ? (
             <Space direction="vertical">
               {socials.map((s) => {
                 const option = SOCIAL_OPTIONS.find(
@@ -197,7 +198,8 @@ export default function TeamMember() {
         dataIndex: "jobType",
         key: "jobType",
         width: 180,
-        render: (jobs: string[]) => (jobs && jobs.length > 0 ? jobs.map((job) => <Tag color="blue" key={job}>{job}</Tag>) : "—"),
+        render: (jobs: string[]) =>
+          jobs?.length ? jobs.map((job) => <Tag color="blue" key={job}>{job}</Tag>) : "—",
       },
       { title: "Team", dataIndex: "team", key: "team", width: 150 },
       {
@@ -205,9 +207,16 @@ export default function TeamMember() {
         key: "action",
         width: 120,
         fixed: "right",
-        render: (_: string, record: Member) => (
+        render: (_, record: Member) => (
           <Space>
-            <Button type="text" icon={<EditOutlined />} onClick={() => { setEditingMember(record); setIsModalOpen(true); }} />
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setEditingMember(record);
+                setIsModalOpen(true);
+              }}
+            />
             <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}>
               <Button type="text" icon={<DeleteOutlined />} danger />
             </Popconfirm>
@@ -221,51 +230,28 @@ export default function TeamMember() {
   return (
     <div className="p-4 bg-white rounded shadow">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <Space wrap>
-          <Input
-            placeholder="Tìm theo tên"
-            prefix={<SearchOutlined />}
-            value={filters.search}
-            onChange={(e) => { setFilters(prev => ({ ...prev, search: e.target.value })); setPage(1); }}
-            style={{ width: 200 }}
-          />
-          <Select
-            placeholder="Chọn hình thức"
-            value={filters.type || undefined}
-            onChange={(v) => { setFilters(prev => ({ ...prev, type: v || "" })); setPage(1); }}
-            allowClear
-            style={{ width: 150 }}
-          >
-            <Option value="fulltime">Full Time</Option>
-            <Option value="parttime">Part Time</Option>
-            <Option value="intern">Intern</Option>
-          </Select>
-          <Select
-            placeholder="Chọn công việc"
-            value={filters.jobType || undefined}
-            onChange={(v) => { setFilters(prev => ({ ...prev, jobType: v || "" })); setPage(1); }}
-            allowClear
-            style={{ width: 160 }}
-          >
-            {jobList.map((j) => (
-              <Option key={j.id} value={j.jobName}>{j.jobName}</Option>
-            ))}
-          </Select>
-          <Select
-            placeholder="Chọn team"
-            value={filters.team || undefined}
-            onChange={(v) => { setFilters(prev => ({ ...prev, team: v || "" })); setPage(1); }}
-            allowClear
-            style={{ width: 160 }}
-          >
-            {teamList.map((t) => (
-              <Option key={t.id} value={t.id}>{t.teamName}</Option>
-            ))}
-          </Select>
-          <Button icon={<ReloadOutlined />} onClick={() => { setFilters({ search: "", type: "", jobType: "", team: "" }); setPage(1); }} />
-        </Space>
+        <MemberFilter
+          filters={filters}
+          jobList={jobList}
+          teamList={teamList}
+          onChange={(newFilters) => {
+            setFilters((prev) => ({ ...prev, ...newFilters }));
+            setPage(1);
+          }}
+          onReset={() => {
+            setFilters({ search: "", type: "", jobType: "", teamId: "" });
+            setPage(1);
+          }}
+        />
 
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingMember(null); setIsModalOpen(true); }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditingMember(null);
+            setIsModalOpen(true);
+          }}
+        >
           Thêm thành viên
         </Button>
       </div>
@@ -282,13 +268,19 @@ export default function TeamMember() {
           total,
           showSizeChanger: true,
           pageSizeOptions,
-          onChange: (p, ps) => { setPage(p); setPageSize(ps); },
+          onChange: (p, ps) => {
+            setPage(p);
+            setPageSize(ps);
+          },
         }}
       />
 
       <AddMemberModal
         open={isModalOpen}
-        onCancel={() => { setIsModalOpen(false); setEditingMember(null); }}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingMember(null);
+        }}
         onSubmit={editingMember ? handleEditMember : handleAddMember}
         initialValues={editingMember || undefined}
         isEdit={!!editingMember}
