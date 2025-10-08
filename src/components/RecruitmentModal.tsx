@@ -29,6 +29,9 @@ export default function AddRecruitmentModal({
           deadline: initialValues.deadline
             ? dayjs(initialValues.deadline) // nhận từ BE là Date, convert sang dayjs cho DatePicker
             : null,
+          description: initialValues.description?.join("\n"), 
+          requirements: initialValues.requirements?.join("\n"), 
+          benefits: initialValues.benefits?.join("\n"), 
         });
       } else {
         form.resetFields();
@@ -44,6 +47,15 @@ export default function AddRecruitmentModal({
       const payload: Omit<Recruitment, "id"> = {
         ...values,
         deadline: values.deadline ? values.deadline.toDate() : null, // DatePicker -> Date object
+        description: values.description
+        ? values.description.split("\n").map((line: string) => line.trim()).filter(Boolean)
+        : [],
+      requirements: values.requirements
+        ? values.requirements.split("\n").map((line: string) => line.trim()).filter(Boolean)
+        : [],
+      benefits: values.benefits
+        ? values.benefits.split("\n").map((line: string) => line.trim()).filter(Boolean)
+        : [],
       };
 
       onSubmit(payload);

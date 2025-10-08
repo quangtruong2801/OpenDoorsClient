@@ -20,9 +20,9 @@ type Recruitment = {
   location: string;
   experience: number;
   deadline: string;
-  description: string;
-  requirements: string;
-  benefits: string;
+  description: string[];
+  requirements: string[];
+  benefits: string[];
   email?: string;
   phone?: string;
   // companyName?: string; 
@@ -163,11 +163,18 @@ function InfoItem({ icon, label, value }: { icon: JSX.Element; label: string; va
 }
 
 // Component con: Section nội dung
-function Section({ title, content }: { title: string; content: string }) {
+function Section({ title, content }: { title: string; content: string[] }) {
   return (
     <div className="mb-10 p-6 rounded-xl shadow-md border bg-white text-gray-800">
       <h2 className="text-2xl font-semibold mb-4">{title}</h2>
-      <p className="text-lg leading-relaxed whitespace-pre-line">{content}</p>
+      <ul className="list-none space-y-2 text-lg leading-relaxed">
+        {content.map((item, index) => (
+          <li key={index} className="before:content-['-'] before:mr-2">
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
+

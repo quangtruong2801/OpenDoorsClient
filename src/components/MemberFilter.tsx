@@ -31,7 +31,6 @@ const MemberFilter: FC<MemberFilterProps> = ({
         allowClear
         style={{ width: 150 }}
       >
-        
         <Select.Option value="fulltime">Full Time</Select.Option>
         <Select.Option value="parttime">Part Time</Select.Option>
         <Select.Option value="intern">Intern</Select.Option>
@@ -43,10 +42,8 @@ const MemberFilter: FC<MemberFilterProps> = ({
         allowClear
         style={{ width: 160 }}
       >
-        
-        {jobList.map((j) => (
-          <Select.Option key={j.id} value={j.jobName}>
-            
+        {jobList.map((j, index) => (
+          <Select.Option key={j.id || `job-${index}`} value={j.jobName}>
             {j.jobName}
           </Select.Option>
         ))}
@@ -58,10 +55,8 @@ const MemberFilter: FC<MemberFilterProps> = ({
         allowClear
         style={{ width: 160 }}
       >
-        
-        {teamList.map((t) => (
-          <Select.Option key={t.id} value={t.id}>
-            
+        {teamList.map((t, index) => (
+          <Select.Option key={t.id || `team-${index}`} value={t.id}>
             {t.teamName}
           </Select.Option>
         ))}

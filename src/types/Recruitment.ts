@@ -6,7 +6,7 @@ export type Recruitment = {
   location: string;             
   experience: number;           
   deadline: Date;             
-  description: string;         
-  requirements: string;         
-  benefits: string;             
+  description: string[];         
+  requirements: string[];         
+  benefits: string[];             
 };

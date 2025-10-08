@@ -82,6 +82,7 @@ export default function AddMemberModal({
           avatar: initialValues.avatar,
           avatarPublicId: initialValues.avatarPublicId,
           password: "",
+          hobbies: initialValues.hobbies?.join("\n"), 
         });
         setAvatarUrl(initialValues.avatar);
         setAvatarFile(null); // Reset file tạm
@@ -146,6 +147,9 @@ export default function AddMemberModal({
         jobType: Array.isArray(values.jobType)
           ? values.jobType
           : [values.jobType],
+        hobbies: values.hobbies
+        ? values.hobbies.split("\n").map((line: string) => line.trim()).filter(Boolean)
+        : [],
         socials: values.socials.map((s: Social) => ({
           platform: s.platform,
           url: s.url,
@@ -248,9 +252,10 @@ export default function AddMemberModal({
             <Form.Item
               name="hobbies"
               label="Sở thích"
-              rules={[{ required: true }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập ít nhất 1 sở thích" }]}
             >
-              <Input.TextArea placeholder="Nhập sở thích" rows={2} />
+              <Input.TextArea rows={4} />
             </Form.Item>
           </Col>
 

@@ -29,11 +29,12 @@ export default function Home() {
   }, []);
 
   if (loading)
-    return <Spin size="large" style={{ display: "block", margin: "100px auto" }} />;
+    return (
+      <Spin size="large" style={{ display: "block", margin: "100px auto" }} />
+    );
 
   return (
     <div className="p-6 mx-[20px]">
-
       <h1 className="text-4xl font-bold mb-8 text-center text-blue-600">
         Danh sách tuyển dụng
       </h1>
@@ -44,14 +45,28 @@ export default function Home() {
 
           return (
             <Col xs={24} sm={12} md={8} lg={6} key={job.id}>
-              <div className="h-full flex flex-col rounded-3xl border border-gray-200 shadow-lg overflow-hidden transition-transform bg-white hover:scale-105">
+              <div className="h-full flex flex-col">
                 <Card
                   hoverable
-                  style={{ border: "none", borderRadius: "1rem" }}
-                  bodyStyle={{ padding: "20px" }}
+                  style={{
+                    border: "none",
+                    borderRadius: "1rem",
+                    height: "100%",
+                  }}
+                  styles={{
+                    body: {
+                      padding: "20px",
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                    },
+                  }}
+                  className="rounded-3xl border border-gray-200 shadow-lg overflow-hidden transition-transform bg-white hover:scale-105"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <h2 className="text-lg font-semibold text-gray-800">{job.title}</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      {job.title}
+                    </h2>
                     {isExpired ? (
                       <Tag color="red">Hết hạn</Tag>
                     ) : (
@@ -59,11 +74,17 @@ export default function Home() {
                     )}
                   </div>
 
-                  <div className="text-sm text-gray-600 space-y-2 mb-4">
-                    {/* <p>🏢 <strong>Công ty:</strong> {job.companyName}</p> */}
-                    <p><strong>Địa điểm:</strong> {job.location}</p>
-                    <p><strong>Mức lương:</strong> {job.salary}</p>
-                    <p><strong>Hạn nộp:</strong> {dayjs(job.deadline).format("DD-MM-YYYY")}</p>
+                  <div className="text-sm text-gray-600 space-y-2 mb-4 flex-grow">
+                    <p>
+                      <strong>Địa điểm:</strong> {job.location}
+                    </p>
+                    <p>
+                      <strong>Mức lương:</strong> {job.salary}
+                    </p>
+                    <p>
+                      <strong>Hạn nộp:</strong>{" "}
+                      {dayjs(job.deadline).format("DD-MM-YYYY")}
+                    </p>
                   </div>
 
                   <Link to={`/recruitment/${job.id}`}>

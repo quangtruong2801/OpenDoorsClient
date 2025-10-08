@@ -30,7 +30,9 @@ export default function TeamMember() {
   const debouncedFilters = useDebounce(filters, 500);
 
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
-  const [pageSize, setPageSize] = useState(Number(searchParams.get("pageSize")) || 10);
+  const [pageSize, setPageSize] = useState(
+    Number(searchParams.get("pageSize")) || 10
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -56,7 +58,10 @@ export default function TeamMember() {
   useEffect(() => {
     const fetchMeta = async () => {
       try {
-        const [jobsRes, teamsRes] = await Promise.all([axios.get("/jobs"), axios.get("/teams")]);
+        const [jobsRes, teamsRes] = await Promise.all([
+          axios.get("/jobs"),
+          axios.get("/teams"),
+        ]);
         setJobList(jobsRes.data);
         setTeamList(teamsRes.data);
       } catch (err) {
@@ -149,14 +154,38 @@ export default function TeamMember() {
           <img
             src={url}
             alt="avatar"
-            style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              objectFit: "cover",
+            }}
           />
         ),
       },
       { title: "Họ và tên", dataIndex: "name", key: "name", width: 180 },
       { title: "Email", dataIndex: "email", key: "email", width: 200 },
-      { title: "Ngày sinh", dataIndex: "birthday", key: "birthday", width: 150 },
-      { title: "Sở thích", dataIndex: "hobbies", key: "hobbies", width: 200 },
+      {
+        title: "Ngày sinh",
+        dataIndex: "birthday",
+        key: "birthday",
+        width: 150,
+      },
+      {
+        title: "Sở thích",
+        dataIndex: "hobbies",
+        key: "hobbies",
+        width: 220,
+        ellipsis: true,
+        render: (desc: string[]) => (
+          <ul style={{ listStyleType: "none", paddingLeft: "1rem" }}>
+            {desc?.map((item, idx) => (
+              <li key={idx}>- {item}</li>
+            ))}
+          </ul>
+        ),
+      },
+
       {
         title: "Mạng xã hội",
         dataIndex: "socials",
@@ -181,7 +210,9 @@ export default function TeamMember() {
                     rel="noopener noreferrer"
                     className="flex items-center gap-1"
                   >
-                    {IconComponent && <IconComponent style={{ color, fontSize: 16 }} />}
+                    {IconComponent && (
+                      <IconComponent style={{ color, fontSize: 16 }} />
+                    )}
                     <span>{s.url}</span>
                   </a>
                 );
@@ -191,7 +222,12 @@ export default function TeamMember() {
             "—"
           ),
       },
-      { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate", width: 150 },
+      {
+        title: "Ngày bắt đầu",
+        dataIndex: "startDate",
+        key: "startDate",
+        width: 150,
+      },
       { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
       {
         title: "Công việc",
@@ -199,7 +235,13 @@ export default function TeamMember() {
         key: "jobType",
         width: 180,
         render: (jobs: string[]) =>
-          jobs?.length ? jobs.map((job) => <Tag color="blue" key={job}>{job}</Tag>) : "—",
+          jobs?.length
+            ? jobs.map((job) => (
+                <Tag color="blue" key={job}>
+                  {job}
+                </Tag>
+              ))
+            : "—",
       },
       { title: "Team", dataIndex: "team", key: "team", width: 150 },
       {
@@ -217,7 +259,8 @@ export default function TeamMember() {
                 setIsModalOpen(true);
               }}
             />
-            <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}>
+            <Popconfirm title="Xóa thành viên này?" onConfirm={() => handleDelete(record.id)} okText="Xóa"
+            cancelText="Hủy">
               <Button type="text" icon={<DeleteOutlined />} danger />
             </Popconfirm>
           </Space>

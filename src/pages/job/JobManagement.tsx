@@ -155,10 +155,7 @@ export default function JobManagement() {
               okText="Xóa"
               cancelText="Hủy"
             >
-              <Button
-                type="text"
-                icon={<DeleteOutlined className="text-red-500" />}
-              />
+              <Button type="text" icon={<DeleteOutlined />} danger />
             </Popconfirm>
           </Space>
         ),

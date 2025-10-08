@@ -73,7 +73,10 @@ export default function TeamManagement() {
   }, [fetchData]);
 
   // Thay đổi filter chung
-  const handleFilterChange = (key: "search" | "memberFilter", value: string) => {
+  const handleFilterChange = (
+    key: "search" | "memberFilter",
+    value: string
+  ) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     setSearchParams(newFilters);
@@ -147,10 +150,7 @@ export default function TeamManagement() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined className="text-red-500" />}
-            />
+          <Button type="text" icon={<DeleteOutlined />} danger />
           </Popconfirm>
         </Space>
       ),

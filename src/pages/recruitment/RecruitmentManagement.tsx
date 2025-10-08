@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Table, Button, message, Space, Popconfirm } from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
@@ -31,7 +27,8 @@ export default function RecruitmentManagement() {
 
   const debouncedSearch = useDebounce(filters.search, 500);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRecruitment, setEditingRecruitment] = useState<Recruitment | null>(null);
+  const [editingRecruitment, setEditingRecruitment] =
+    useState<Recruitment | null>(null);
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
@@ -74,7 +71,13 @@ export default function RecruitmentManagement() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, filters.location, filters.salary, filters.page, filters.pageSize]);
+  }, [
+    debouncedSearch,
+    filters.location,
+    filters.salary,
+    filters.page,
+    filters.pageSize,
+  ]);
 
   useEffect(() => {
     fetchRecruitments();
@@ -132,7 +135,12 @@ export default function RecruitmentManagement() {
       { title: "Tiêu đề", dataIndex: "title", key: "title", width: 180 },
       { title: "Mức lương", dataIndex: "salary", key: "salary", width: 120 },
       { title: "Địa điểm", dataIndex: "location", key: "location", width: 150 },
-      { title: "Kinh nghiệm", dataIndex: "experience", key: "experience", width: 120 },
+      {
+        title: "Kinh nghiệm",
+        dataIndex: "experience",
+        key: "experience",
+        width: 120,
+      },
       {
         title: "Hạn nộp",
         dataIndex: "deadline",
@@ -140,9 +148,49 @@ export default function RecruitmentManagement() {
         width: 120,
         render: (date: Date) => (date ? dayjs(date).format("DD/MM/YYYY") : ""),
       },
-      { title: "Mô tả công việc", dataIndex: "description", key: "description", width: 250, ellipsis: true },
-      { title: "Yêu cầu ứng viên", dataIndex: "requirements", key: "requirements", width: 250, ellipsis: true },
-      { title: "Quyền lợi", dataIndex: "benefits", key: "benefits", width: 250, ellipsis: true },
+      {
+        title: "Mô tả công việc",
+        dataIndex: "description",
+        key: "description",
+        width: 250,
+        ellipsis: true,
+        render: (desc: string[]) => (
+          <ul style={{ listStyleType: "none", paddingLeft: "1rem" }}>
+            {desc?.map((item, idx) => (
+              <li key={idx}>- {item}</li>
+            ))}
+          </ul>
+        ),
+      },
+      {
+        title: "Yêu cầu ứng viên",
+        dataIndex: "requirements",
+        key: "requirements",
+        width: 250,
+        ellipsis: true,
+        render: (desc: string[]) => (
+          <ul style={{ listStyleType: "none", paddingLeft: "1rem" }}>
+            {desc?.map((item, idx) => (
+              <li key={idx}>- {item}</li>
+            ))}
+          </ul>
+        ),
+      },
+      {
+        title: "Quyền lợi",
+        dataIndex: "benefits",
+        key: "benefits",
+        width: 250,
+        ellipsis: true,
+        render: (desc: string[]) => (
+          <ul style={{ listStyleType: "none", paddingLeft: "1rem" }}>
+            {desc?.map((item, idx) => (
+              <li key={idx}>- {item}</li>
+            ))}
+          </ul>
+        ),
+      },
+
       {
         title: "Hành động",
         key: "action",
@@ -218,7 +266,8 @@ export default function RecruitmentManagement() {
           total,
           showSizeChanger: true,
           pageSizeOptions,
-          onChange: (p, ps) => setFilters({ ...filters, page: p, pageSize: ps }),
+          onChange: (p, ps) =>
+            setFilters({ ...filters, page: p, pageSize: ps }),
         }}
       />
 
@@ -228,7 +277,9 @@ export default function RecruitmentManagement() {
           setIsModalOpen(false);
           setEditingRecruitment(null);
         }}
-        onSubmit={editingRecruitment ? handleEditRecruitment : handleAddRecruitment}
+        onSubmit={
+          editingRecruitment ? handleEditRecruitment : handleAddRecruitment
+        }
         initialValues={editingRecruitment || undefined}
         isEdit={!!editingRecruitment}
       />
