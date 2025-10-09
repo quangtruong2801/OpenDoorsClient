@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate  } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Spin, Button, Tag } from "antd";
 import {
   MapPin,
@@ -25,7 +25,7 @@ type Recruitment = {
   benefits: string[];
   email?: string;
   phone?: string;
-  // companyName?: string; 
+  // companyName?: string;
 };
 
 export default function RecruitmentDetail() {
@@ -71,13 +71,9 @@ export default function RecruitmentDetail() {
     <div className="p-6 mx-[80px] space-y-10 bg-gray-50 rounded-2xl shadow-lg">
       {/* Nút Quay lại */}
       <div>
-      <Button
-        type="default"
-        className="mb-2"
-        onClick={() => navigate(-1)}
-      >
-        &larr; Quay lại
-      </Button>
+        <Button type="default" className="mb-2" onClick={() => navigate(-1)}>
+          &larr; Quay lại
+        </Button>
       </div>
       {/* Header */}
       <div className="relative h-48 bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 rounded-2xl flex flex-col justify-center items-center text-white text-center">
@@ -93,13 +89,17 @@ export default function RecruitmentDetail() {
           {isExpired ? "Hết hạn" : "Đang tuyển"}
         </Tag>
 
-        {/* Button Ứng tuyển nổi */}
-        <Button
-          size="large"
-          className="absolute -bottom-6 rounded-full px-12 py-4 text-lg font-semibold text-blue-600 bg-white shadow-lg hover:scale-105 transition-transform"
-        >
-          Ứng tuyển ngay
-        </Button>
+        {/* Button ứng tuyển*/}
+        <div className="mt-4 flex justify-center">
+          <Link
+            to={`/apply?id=${recruitment.id}&title=${encodeURIComponent(
+              recruitment.title
+            )}`}
+            className="px-8 py-4 text-lg font-semibold !text-white bg-blue-600 border border-white border-opacity-30 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 transition-transform inline-block text-center"
+          >
+            Ứng tuyển ngay
+          </Link>
+        </div>
       </div>
 
       {/* Thông tin tổng quan */}
@@ -150,7 +150,15 @@ export default function RecruitmentDetail() {
 }
 
 // Component con: Thông tin tổng quan
-function InfoItem({ icon, label, value }: { icon: JSX.Element; label: string; value: string }) {
+function InfoItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: JSX.Element;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex items-center gap-3 text-lg">
       <span className="text-blue-600">{icon}</span>
@@ -177,4 +185,3 @@ function Section({ title, content }: { title: string; content: string[] }) {
     </div>
   );
 }
-

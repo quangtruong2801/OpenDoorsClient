@@ -9,7 +9,7 @@ interface PrivateRouterProps {
 export default function PrivateRouter({ children, adminOnly = false }: PrivateRouterProps) {
   const { user, loading } = useAuth();
 
-  // ✅ Khi đang loading thì hiển thị màn hình chờ
+  // Khi đang loading thì hiển thị màn hình chờ
   if (loading) {
     return <div className="text-center p-10">🔄 Đang xác thực người dùng...</div>;
   }
