@@ -5,7 +5,7 @@ export type Member = {
   name: string;
   birthday: string;
   email: string;
-  hobbies: string;
+  hobbies: string[];
   socials: string[];
   startDate: string;
   type: string;

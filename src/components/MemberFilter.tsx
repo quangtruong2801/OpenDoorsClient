@@ -1,97 +1,68 @@
-import { Input, Select, Space } from "antd";
-import type { Management } from "../types/Management";
-
-const { Option } = Select;
-
-interface MemberFilterProps {
-  search: string;
-  type: string;
-  jobType: string;
-  teamId: string;
-  jobList: { id?: string; jobName?: string }[]; // id hoặc jobName có thể undefined
-  teamList: Management[];
-  onSearchChange: (v: string) => void;
-  onTypeChange: (v: string) => void;
-  onJobTypeChange: (v: string) => void;
-  onTeamChange: (v: string) => void;
-}
-
-export default function MemberFilter({
-  search,
-  type,
-  jobType,
-  teamId,
+import { Input, Select, Space, Button } from "antd";
+import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
+import type { FC } from "react";
+type MemberFilterProps = {
+  filters: { search: string; type: string; jobType: string; teamId: string };
+  jobList: { id: string; jobName: string }[];
+  teamList: { id: string; teamName: string }[];
+  onChange: (newFilters: Partial<MemberFilterProps["filters"]>) => void;
+  onReset: () => void;
+};
+const MemberFilter: FC<MemberFilterProps> = ({
+  filters,
   jobList,
   teamList,
-  onSearchChange,
-  onTypeChange,
-  onJobTypeChange,
-  onTeamChange,
-}: MemberFilterProps) {
+  onChange,
+  onReset,
+}) => {
   return (
-    <Space size="middle" className="flex flex-wrap w-full gap-4">
-      {/* Search */}
+    <Space wrap>
       <Input
-        placeholder="Search..."
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="flex-1 min-w-[180px]"
+        placeholder="Tìm theo tên"
+        prefix={<SearchOutlined />}
+        value={filters.search}
+        onChange={(e) => onChange({ search: e.target.value })}
+        style={{ width: 200 }}
       />
-
-      {/* Type Filter */}
       <Select
-        placeholder="Select Type"
-        value={type || undefined}
-        onChange={onTypeChange}
+        placeholder="Chọn hình thức"
+        value={filters.type || undefined}
+        onChange={(v) => onChange({ type: v || "" })}
         allowClear
-        className="flex-1 min-w-[150px]"
+        style={{ width: 150 }}
       >
-        <Option key="type-fulltime" value="fulltime">
-          Full Time
-        </Option>
-        <Option key="type-parttime" value="parttime">
-          Part Time
-        </Option>
-        <Option key="type-intern" value="intern">
-          Intern
-        </Option>
+        <Select.Option value="fulltime">Full Time</Select.Option>
+        <Select.Option value="parttime">Part Time</Select.Option>
+        <Select.Option value="intern">Intern</Select.Option>
       </Select>
-
-      {/* Job Filter */}
       <Select
-        placeholder="Select Job Type"
-        value={jobType || undefined}
-        onChange={onJobTypeChange}
+        placeholder="Chọn công việc"
+        value={filters.jobType || undefined}
+        onChange={(v) => onChange({ jobType: v || "" })}
         allowClear
-        className="flex-1 min-w-[150px]"
+        style={{ width: 160 }}
       >
         {jobList.map((j, index) => (
-          <Option
-            key={j.id ?? `job-${index}`} // fallback nếu id undefined
-            value={j.jobName ?? `job-${index}`} // fallback nếu jobName undefined
-          >
-            {j.jobName ?? `Job ${index + 1}`}
-          </Option>
+          <Select.Option key={j.id || `job-${index}`} value={j.jobName}>
+            {j.jobName}
+          </Select.Option>
         ))}
       </Select>
-
-      {/* Team Filter */}
       <Select
-        placeholder="Select Team"
-        value={teamId || undefined}
-        onChange={onTeamChange}
+        placeholder="Chọn team"
+        value={filters.teamId || undefined}
+        onChange={(v) => onChange({ teamId: v || "" })}
         allowClear
-        className="flex-1 min-w-[180px]"
+        style={{ width: 160 }}
       >
         {teamList.map((t, index) => (
-          <Option
-            key={t.id ?? `team-${index}`} // fallback nếu id undefined
-            value={t.id ?? `team-${index}`}
-          >
-            {t.teamName ?? `Team ${index + 1}`}
-          </Option>
+          <Select.Option key={t.id || `team-${index}`} value={t.id}>
+            {t.teamName}
+          </Select.Option>
         ))}
       </Select>
+      <Button icon={<ReloadOutlined />} onClick={onReset} />{" "}
     </Space>
   );
-}
+};
+export default MemberFilter;

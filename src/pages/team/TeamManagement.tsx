@@ -13,11 +13,19 @@ import axios from "../../api/config";
 import AddTeamModal from "../../components/TeamModal";
 import TeamFilter from "../../components/TeamManagementFilter";
 import type { Management } from "../../types/Management";
+import useDebounce from "../../hooks/useDebounce";
 
 export default function TeamManagement() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const search = searchParams.get("search") || "";
-  const memberFilter = searchParams.get("memberFilter") || "all";
+
+  // Gom filter thành 1 state duy nhất
+  const [filters, setFilters] = useState({
+    search: searchParams.get("search") || "",
+    memberFilter: searchParams.get("memberFilter") || "all",
+  });
+
+  // Dùng debounce để tránh fetch liên tục khi user đang gõ
+  const debouncedFilters = useDebounce(filters, 500);
 
   const [data, setData] = useState<Management[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,23 +37,24 @@ export default function TeamManagement() {
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // 🔄 Fetch danh sách team
+  // Fetch danh sách team
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get<Management[]>("/teams");
       const result = res.data;
 
-      // 🔍 Lọc theo từ khóa
+      // Lọc theo từ khóa (đã debounce)
       let filtered = result.filter((d) =>
-        d.teamName.toLowerCase().includes(search.toLowerCase())
+        d.teamName.toLowerCase().includes(debouncedFilters.search.toLowerCase())
       );
 
-      // 🔍 Lọc theo số lượng thành viên
+      // Lọc theo số lượng thành viên
       filtered = filtered.filter((d) => {
-        if (memberFilter === "lt5") return d.members < 5;
-        if (memberFilter === "5to10") return d.members >= 5 && d.members <= 10;
-        if (memberFilter === "gt10") return d.members > 10;
+        if (debouncedFilters.memberFilter === "lt5") return d.members < 5;
+        if (debouncedFilters.memberFilter === "5to10")
+          return d.members >= 5 && d.members <= 10;
+        if (debouncedFilters.memberFilter === "gt10") return d.members > 10;
         return true;
       });
 
@@ -57,19 +66,32 @@ export default function TeamManagement() {
     } finally {
       setLoading(false);
     }
-  }, [search, memberFilter, page, pageSize]);
+  }, [debouncedFilters, page, pageSize]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Reset toàn bộ filter
+  // Thay đổi filter chung
+  const handleFilterChange = (
+    key: "search" | "memberFilter",
+    value: string
+  ) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    setSearchParams(newFilters);
+    setPage(1);
+  };
+
+  // Reset filter
   const handleResetFilters = () => {
+    const reset = { search: "", memberFilter: "all" };
+    setFilters(reset);
     setSearchParams({});
     setPage(1);
   };
 
-  // Add/Edit
+  // Add/Edit team
   const handleSaveTeam = async (values: { teamName: string }) => {
     try {
       if (editingTeam) {
@@ -79,7 +101,6 @@ export default function TeamManagement() {
         await axios.post("/teams", values);
         message.success("Thêm team thành công!");
       }
-
       setIsModalOpen(false);
       setEditingTeam(null);
       fetchData();
@@ -89,13 +110,13 @@ export default function TeamManagement() {
     }
   };
 
-  //Edit team
+  // Edit team
   const handleEdit = (record: Management) => {
     setEditingTeam(record);
     setIsModalOpen(true);
   };
 
-  //Delete team
+  // Delete team
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`/teams/${id}`);
@@ -107,20 +128,7 @@ export default function TeamManagement() {
     }
   };
 
-  //Handlers filter
-  const handleSearchChange = (v: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      search: v,
-    });
-
-  const handleMemberFilterChange = (v: string) =>
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      memberFilter: v,
-    });
-
-  //Cột bảng
+  // Cột bảng
   const columns: ColumnsType<Management> = [
     { title: "Team Name", dataIndex: "teamName", key: "teamName", width: 200 },
     { title: "Members", dataIndex: "members", key: "members", width: 150 },
@@ -142,10 +150,7 @@ export default function TeamManagement() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined className="text-red-500" />}
-            />
+          <Button type="text" icon={<DeleteOutlined />} danger />
           </Popconfirm>
         </Space>
       ),
@@ -158,19 +163,20 @@ export default function TeamManagement() {
         <Space>
           <div className="flex-1 min-w-[300px]">
             <TeamFilter
-              search={search}
-              memberFilter={memberFilter}
-              onSearchChange={handleSearchChange}
-              onMemberFilterChange={handleMemberFilterChange}
+              search={filters.search}
+              memberFilter={filters.memberFilter}
+              onSearchChange={(v) => handleFilterChange("search", v)}
+              onMemberFilterChange={(v) =>
+                handleFilterChange("memberFilter", v)
+              }
             />
           </div>
-          {/* Reset */}
+
           <Button
             icon={<ReloadOutlined />}
             onClick={handleResetFilters}
             className="whitespace-nowrap"
-          >
-          </Button>
+          />
         </Space>
 
         <Button

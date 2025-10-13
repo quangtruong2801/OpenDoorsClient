@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Input, Form, message } from "antd";
+import { Button, Input, Form, message, Card } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { API_BASE_URL } from "../api/config";
@@ -26,15 +26,12 @@ export default function LoginPage() {
       const data: { token: string; name: string; role: string; id: string } =
         await res.json();
 
-      await login(data.token); // lưu token + user info
+      await login(data.token);
       message.success(`Xin chào ${data.name || "User"}!`);
-
-      // Redirect sau khi login thành công
       navigate("/");
     } catch (err: unknown) {
       console.error("Login error:", err);
-      if (err instanceof Error)
-        message.error(err.message || "Đăng nhập thất bại!");
+      if (err instanceof Error) message.error(err.message || "Đăng nhập thất bại!");
       else message.error("Đăng nhập thất bại!");
     } finally {
       setLoading(false);
@@ -43,49 +40,56 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 px-4">
-      <Form
-        onFinish={onFinish}
-        className="p-10 bg-white rounded-2xl shadow-xl w-full max-w-md transition-transform transform hover:scale-105"
-        layout="vertical"
-      >
-        <h2 className="text-center mb-8 text-2xl font-extrabold text-gray-800 tracking-tight">
-          Đăng nhập
-        </h2>
-
-        <Form.Item
-          label={<span className="text-gray-700 font-medium">Email</span>}
-          name="email"
-          rules={[{ required: true, message: "Nhập email!" }]}
-          className="mb-6"
-        >
-          <Input
-            placeholder="Nhập email của bạn"
-            className="rounded-lg border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-300 px-4 w-[280px] mx-auto"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label={<span className="text-gray-700 font-medium">Mật khẩu</span>}
-          name="password"
-          rules={[{ required: true, message: "Nhập mật khẩu!" }]}
-          className="mb-6"
-        >
-          <Input.Password
-            placeholder="••••••••"
-            className="rounded-lg border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-300 px-4 w-[280px] mx-auto"
-          />
-        </Form.Item>
-
-        <Form.Item className="mb-4 flex justify-center">
-          <Button
-            type="primary"
-            htmlType="submit"
-            className="w-[280px] py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-pink-500 hover:to-purple-500 rounded-lg text-white font-semibold shadow-md transition-all duration-300"
-            loading={loading}
-          >
+      <Card
+        title={
+          <h2 className="text-center text-2xl font-extrabold text-gray-800">
             Đăng nhập
-          </Button>
-        </Form.Item>
+          </h2>
+        }
+        className="shadow-2xl rounded-2xl w-full max-w-md transition-transform transform hover:scale-105"
+        variant="borderless"
+      >
+        <Form
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+        >
+          <Form.Item
+            label={<span className="text-gray-700 font-medium">Email</span>}
+            name="email"
+            rules={[{ required: true, message: "Nhập email!" }]}
+            className="mb-6"
+          >
+            <Input
+              placeholder="Nhập email của bạn"
+              className="rounded-lg border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-300 px-4"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="text-gray-700 font-medium">Mật khẩu</span>}
+            name="password"
+            rules={[{ required: true, message: "Nhập mật khẩu!" }]}
+            className="mb-6"
+          >
+            <Input.Password
+              placeholder="••••••••"
+              className="rounded-lg border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-300 px-4"
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-4">
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              block
+              className="py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-pink-500 hover:to-purple-500 rounded-lg text-white font-semibold shadow-md transition-all duration-300"
+            >
+              Đăng nhập
+            </Button>
+          </Form.Item>
+        </Form>
 
         <p className="text-center text-sm text-gray-500 mt-4">
           Chưa có tài khoản?{" "}
@@ -93,7 +97,7 @@ export default function LoginPage() {
             Đăng ký
           </a>
         </p>
-      </Form>
+      </Card>
     </div>
   );
 }

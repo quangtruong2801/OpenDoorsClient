@@ -13,6 +13,7 @@ import { useSearchParams } from "react-router-dom";
 import api from "../../api/config";
 import type { Job } from "../../types/Job";
 import AddJobModal from "../../components/JobModal";
+import useDebounce from "../../hooks/useDebounce";
 
 export default function JobManagement() {
   const [data, setData] = useState<Job[]>([]);
@@ -22,38 +23,53 @@ export default function JobManagement() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  //Lấy giá trị từ URL
-  const search = searchParams.get("search") || "";
-  const page = Number(searchParams.get("page") || 1);
-  const pageSize = Number(searchParams.get("pageSize") || 5);
+  // State gốc cho tìm kiếm và phân trang
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+  const [pageSize, setPageSize] = useState(
+    Number(searchParams.get("pageSize")) || 5
+  );
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // Fetch jobs từ server
+  // Debounce để tránh gọi API liên tục khi gõ chữ
+  const debouncedSearch = useDebounce(search, 500);
+
+  // Cập nhật URL mỗi khi search hoặc phân trang thay đổi
+  useEffect(() => {
+    const params: Record<string, string> = {
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    };
+    if (search) params.search = search;
+    setSearchParams(params);
+  }, [search, page, pageSize, setSearchParams]);
+
+  // Fetch jobs từ server với filter & debounce
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get<Job[]>("/jobs");
       const result = res.data;
 
-      // Lọc theo từ khóa
+      // Lọc theo từ khóa debounce
       const filtered = result.filter((j) =>
-        j.jobName.toLowerCase().includes(search.toLowerCase())
+        j.jobName.toLowerCase().includes(debouncedSearch.toLowerCase())
       );
 
-      setData(filtered.slice((page - 1) * pageSize, page * pageSize));
+      setData(filtered);
     } catch (err) {
       console.error(err);
       message.error("Lỗi khi tải danh sách công việc");
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize]);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchJobs();
-  }, [fetchJobs]);
+  }, [fetchJobs, page, pageSize]);
 
-  //Thêm job
+  // Thêm job
   const handleAddJob = async (values: Omit<Job, "jobId">) => {
     try {
       await api.post("/jobs", values);
@@ -139,10 +155,7 @@ export default function JobManagement() {
               okText="Xóa"
               cancelText="Hủy"
             >
-              <Button
-                type="text"
-                icon={<DeleteOutlined className="text-red-500" />}
-              />
+              <Button type="text" icon={<DeleteOutlined />} danger />
             </Popconfirm>
           </Space>
         ),
@@ -151,22 +164,11 @@ export default function JobManagement() {
     [handleDelete]
   );
 
-  // Cập nhật URL khi người dùng thay đổi search
-  const handleSearchChange = (value: string) => {
-    setSearchParams({
-      search: value,
-      page: "1",
-      pageSize: pageSize.toString(),
-    });
-  };
-
-  // Cập nhật URL khi người dùng đổi trang hoặc pageSize
-  const handlePaginationChange = (newPage: number, newPageSize: number) => {
-    setSearchParams({
-      search,
-      page: newPage.toString(),
-      pageSize: newPageSize.toString(),
-    });
+  // Reset search
+  const handleReset = () => {
+    setSearch("");
+    setPage(1);
+    setPageSize(5);
   };
 
   return (
@@ -177,19 +179,14 @@ export default function JobManagement() {
             placeholder="Tìm kiếm theo tên công việc..."
             prefix={<SearchOutlined />}
             value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="max-w-sm"
           />
 
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => {
-              setSearchParams({
-                page: "1",
-                pageSize: "5",
-              });
-            }}
-          ></Button>
+          <Button icon={<ReloadOutlined />} onClick={handleReset} />
         </Space>
 
         <Button
@@ -206,7 +203,7 @@ export default function JobManagement() {
 
       <Table
         columns={columns}
-        dataSource={data}
+        dataSource={data.slice((page - 1) * pageSize, page * pageSize)} // ✅ phân trang sau khi lọc
         rowKey="jobId"
         loading={loading}
         scroll={{ x: "max-content", y: 600 }}
@@ -216,7 +213,10 @@ export default function JobManagement() {
           total: data.length,
           showSizeChanger: true,
           pageSizeOptions,
-          onChange: handlePaginationChange,
+          onChange: (p, ps) => {
+            setPage(p);
+            setPageSize(ps);
+          },
         }}
       />
 

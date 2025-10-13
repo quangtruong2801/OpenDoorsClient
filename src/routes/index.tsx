@@ -9,7 +9,9 @@ import RecruitmentManagement from "../pages/recruitment/RecruitmentManagement";
 import RecruitmentList from "../pages/recruitment/RecruitmentList";
 import RecruitmentDetail from "../pages/recruitment/RecruitmentDetail";
 import PrivateRouter from "../layouts/PrivateRoute";
-import LoginPage from "../pages/LoginPage"; 
+import LoginPage from "../pages/LoginPage";
+import ApplicationForm from "../pages/application/ApplicationForm";
+import ApplicationManagement from "../pages/application/ApplicationManagement";
 
 export default function AppRoutes() {
   return (
@@ -88,6 +90,26 @@ export default function AppRoutes() {
           <PrivateRouter adminOnly>
             <MainLayout>
               <RecruitmentManagement />
+            </MainLayout>
+          </PrivateRouter>
+        }
+      />
+
+      <Route
+        path="/apply"
+        element={
+          <MainLayout>
+            <ApplicationForm />
+          </MainLayout>
+        }
+      />
+
+      <Route
+        path="/application/management"
+        element={
+          <PrivateRouter adminOnly>
+            <MainLayout>
+              <ApplicationManagement />
             </MainLayout>
           </PrivateRouter>
         }

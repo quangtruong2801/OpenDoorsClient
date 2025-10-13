@@ -33,7 +33,7 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
     {
       key: "job",
       icon: <SolutionOutlined />,
-      label: "Job",
+      label: "Công việc",
       children: [
         { key: "/job/management", label: <Link to="/job/management">Quản lí công việc</Link> },
       ],
@@ -41,10 +41,11 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
     {
       key: "recruitment",
       icon: <SolutionOutlined />,
-      label: "Recruitment",
+      label: "Tuyển dụng",
       children: [
         { key: "/recruitment/management", label: <Link to="/recruitment/management">Quản lý tin tuyển dụng</Link> },
         // { key: "/recruitments", label: <Link to="/recruitments">Trang tuyển dụng</Link> },
+        { key: "/application/management", label: <Link to="/application/management">Quản lý đơn ứng tuyển</Link> },
       ],
     },
     {
