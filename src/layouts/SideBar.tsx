@@ -1,4 +1,4 @@
-import { Menu } from "antd";
+import { Menu, theme } from "antd";
 import {
   TeamOutlined,
   HomeOutlined,
@@ -13,8 +13,8 @@ import { useAuth } from "../context/useAuth";
 export default function SideBar({ collapsed }: { collapsed: boolean }) {
   const location = useLocation();
   const { user } = useAuth();
+  const { token } = theme.useToken(); // Lấy màu theme hiện tại
 
-  // Menu full cho admin
   const adminItems = [
     {
       key: "/",
@@ -44,7 +44,6 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
       label: "Tuyển dụng",
       children: [
         { key: "/recruitment/management", label: <Link to="/recruitment/management">Quản lý tin tuyển dụng</Link> },
-        // { key: "/recruitments", label: <Link to="/recruitments">Trang tuyển dụng</Link> },
         { key: "/application/management", label: <Link to="/application/management">Quản lý đơn ứng tuyển</Link> },
       ],
     },
@@ -55,29 +54,36 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
     },
   ];
 
-  // Menu cho user thường / chưa login
   const userItems = [
     { key: "/", icon: <HomeOutlined />, label: <Link to="/">Trang chủ</Link> },
-    // { key: "/recruitments", icon: <SolutionOutlined />, label: <Link to="/recruitments">Trang tuyển dụng</Link> },
   ];
 
   const items = user?.role === "admin" ? adminItems : userItems;
 
   return (
-    <div className="h-screen">
-      <div className="w-full h-12 mb-4">
+    <div
+      className="h-screen transition-colors duration-300"
+      style={{
+        backgroundColor: token.colorBgContainer, // Nền đồng bộ theo theme
+        color: token.colorText, // Chữ đổi màu tự động
+      }}
+    >
+      <div className="w-full h-12 mb-4 flex items-center justify-center">
         {!collapsed ? (
-          <img src={openIcon} alt="Open" className="w-full h-full object-contain" />
+          <img src={openIcon} alt="Open" className="w-3/4 h-full object-contain" />
         ) : (
-          <img src={closeIcon} alt="Close" className="w-full h-full object-contain" />
+          <img src={closeIcon} alt="Close" className="w-10 h-10 object-contain" />
         )}
       </div>
 
       <Menu
         mode="inline"
         selectedKeys={[location.pathname]}
-        // defaultOpenKeys={["team", "job", "recruitment"]}
         items={items}
+        style={{
+          backgroundColor: "transparent", // Giữ nền khớp với div cha
+          borderInlineEnd: "none", // Loại bỏ viền dọc
+        }}
       />
     </div>
   );

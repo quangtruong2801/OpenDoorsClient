@@ -1,13 +1,19 @@
 import { useEffect, useState, useCallback } from "react";
-import { Table, Button, Popconfirm, message, Select } from "antd";
+import { Table, Button, Popconfirm, message, Select, theme, Typography, Space } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import axios from "../../api/config";
 import type { ColumnsType } from "antd/es/table";
 import type { Application } from "../../types/Application";
 
+const { Title } = Typography;
+
 export default function ApplicationManagement() {
   const [data, setData] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const {
+    token: { colorBgContainer, colorText, colorBorderSecondary },
+  } = theme.useToken(); // ✅ lấy token từ Ant Design theme
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);
@@ -106,15 +112,27 @@ export default function ApplicationManagement() {
   ];
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <h2 className="text-lg font-semibold mb-4">Quản lý hồ sơ ứng tuyển</h2>
-      <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="id"
-        loading={loading}
-        scroll={{ x: "max-content" }}
-      />
+    <div
+      style={{
+        background: colorBgContainer, // ✅ tự đổi nền theo theme
+        color: colorText,
+        border: `1px solid ${colorBorderSecondary}`,
+        borderRadius: 8,
+        padding: 16,
+      }}
+    >
+      <Space direction="vertical" style={{ width: "100%" }}>
+        <Title level={4} style={{ marginBottom: 0 }}>
+          Quản lý hồ sơ ứng tuyển
+        </Title>
+        <Table
+          columns={columns}
+          dataSource={data}
+          rowKey="id"
+          loading={loading}
+          scroll={{ x: "max-content" }}
+        />
+      </Space>
     </div>
   );
 }

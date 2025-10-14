@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Table, Button, message, Space, Popconfirm, Input } from "antd";
+import {
+  Table,
+  Button,
+  Space,
+  Popconfirm,
+  Input,
+  App,
+  theme,
+  Card,
+} from "antd";
 import {
   EditOutlined,
   PlusOutlined,
@@ -22,19 +31,18 @@ export default function JobManagement() {
   const [editingJob, setEditingJob] = useState<Job | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // State gốc cho tìm kiếm và phân trang
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [pageSize, setPageSize] = useState(
     Number(searchParams.get("pageSize")) || 5
   );
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
-
-  // Debounce để tránh gọi API liên tục khi gõ chữ
   const debouncedSearch = useDebounce(search, 500);
 
-  // Cập nhật URL mỗi khi search hoặc phân trang thay đổi
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
+
+  // Cập nhật URL khi search / page thay đổi
   useEffect(() => {
     const params: Record<string, string> = {
       page: page.toString(),
@@ -44,14 +52,13 @@ export default function JobManagement() {
     setSearchParams(params);
   }, [search, page, pageSize, setSearchParams]);
 
-  // Fetch jobs từ server với filter & debounce
+  // Fetch dữ liệu
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get<Job[]>("/jobs");
       const result = res.data;
 
-      // Lọc theo từ khóa debounce
       const filtered = result.filter((j) =>
         j.jobName.toLowerCase().includes(debouncedSearch.toLowerCase())
       );
@@ -63,13 +70,13 @@ export default function JobManagement() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch]);
+  }, [debouncedSearch, message]);
 
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs, page, pageSize]);
 
-  // Thêm job
+  // Thêm công việc
   const handleAddJob = async (values: Omit<Job, "jobId">) => {
     try {
       await api.post("/jobs", values);
@@ -82,7 +89,7 @@ export default function JobManagement() {
     }
   };
 
-  // Sửa job
+  // Sửa công việc
   const handleEditJob = async (values: Partial<Job>) => {
     if (!editingJob) return;
     try {
@@ -97,36 +104,40 @@ export default function JobManagement() {
     }
   };
 
-  // Xóa job
+  // Xóa công việc
   const handleDelete = useCallback(
     async (jobId: string) => {
       try {
         await api.delete(`/jobs/${jobId}`);
-        message.success("Xóa thành công!");
+        message.success("Xóa công việc thành công!");
         fetchJobs();
       } catch (err) {
         console.error(err);
         message.error("Có lỗi khi xóa!");
       }
     },
-    [fetchJobs]
+    [fetchJobs, message]
   );
 
-  // Cột của bảng
   const columns: ColumnsType<Job> = useMemo(
     () => [
       {
         title: "Tên công việc",
         dataIndex: "jobName",
         key: "jobName",
-        width: 180,
+        width: 200,
       },
-      { title: "Kỹ năng", dataIndex: "skills", key: "skills", width: 200 },
+      {
+        title: "Kỹ năng",
+        dataIndex: "skills",
+        key: "skills",
+        width: 200,
+      },
       {
         title: "Yêu cầu",
         dataIndex: "requirement",
         key: "requirement",
-        width: 200,
+        width: 220,
       },
       {
         title: "Mô tả",
@@ -137,34 +148,35 @@ export default function JobManagement() {
       {
         title: "Hành động",
         key: "action",
-        width: 120,
         fixed: "right",
+        width: 120,
         render: (_: string, record: Job) => (
           <Space size="middle">
             <Button
               type="text"
-              icon={<EditOutlined className="text-blue-600" />}
+              icon={<EditOutlined style={{ color: token.colorPrimary }} />}
               onClick={() => {
                 setEditingJob(record);
                 setIsModalOpen(true);
               }}
             />
             <Popconfirm
-              title="Xóa công việc này?"
+              title="Xác nhận xóa"
+              description={`Bạn có chắc muốn xóa công việc "${record.jobName}"?`}
               onConfirm={() => handleDelete(record.jobId)}
               okText="Xóa"
               cancelText="Hủy"
+              okButtonProps={{ danger: true }}
             >
-              <Button type="text" icon={<DeleteOutlined />} danger />
+              <Button type="text" danger icon={<DeleteOutlined />} />
             </Popconfirm>
           </Space>
         ),
       },
     ],
-    [handleDelete]
+    [handleDelete, token.colorPrimary]
   );
 
-  // Reset search
   const handleReset = () => {
     setSearch("");
     setPage(1);
@@ -172,23 +184,41 @@ export default function JobManagement() {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <Space>
+    <Card
+      style={{
+        background: token.colorBgContainer,
+        borderRadius: token.borderRadiusLG,
+        boxShadow: token.boxShadowTertiary,
+      }}
+      title="Quản lý công việc"
+    >
+      <Space
+        style={{
+          marginBottom: token.margin,
+          display: "flex",
+          justifyContent: "space-between",
+          width: "100%",
+          flexWrap: "wrap",
+        }}
+      >
+        {/* Bên trái: tìm kiếm + làm mới */}
+        <Space style={{ flexWrap: "wrap" }}>
           <Input
-            placeholder="Tìm kiếm theo tên công việc..."
+            placeholder="Tìm kiếm công việc..."
             prefix={<SearchOutlined />}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="max-w-sm"
+            style={{ width: 260 }}
           />
-
-          <Button icon={<ReloadOutlined />} onClick={handleReset} />
+          <Button icon={<ReloadOutlined />} onClick={handleReset}>
+            Làm mới
+          </Button>
         </Space>
 
+        {/* Bên phải: nút thêm công việc */}
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -199,11 +229,11 @@ export default function JobManagement() {
         >
           Thêm công việc
         </Button>
-      </div>
+      </Space>
 
       <Table
         columns={columns}
-        dataSource={data.slice((page - 1) * pageSize, page * pageSize)} // ✅ phân trang sau khi lọc
+        dataSource={data.slice((page - 1) * pageSize, page * pageSize)}
         rowKey="jobId"
         loading={loading}
         scroll={{ x: "max-content", y: 600 }}
@@ -233,6 +263,6 @@ export default function JobManagement() {
         }
         initialValues={editingJob || undefined}
       />
-    </div>
+    </Card>
   );
 }

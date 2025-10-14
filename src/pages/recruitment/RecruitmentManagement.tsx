@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Table, Button, message, Space, Popconfirm } from "antd";
+import { Table, Button, Space, Popconfirm, App, Card, theme } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
@@ -15,8 +15,11 @@ export default function RecruitmentManagement() {
   const [data, setData] = useState<Recruitment[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRecruitment, setEditingRecruitment] =
+    useState<Recruitment | null>(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
     location: searchParams.get("location") || "",
@@ -26,11 +29,9 @@ export default function RecruitmentManagement() {
   });
 
   const debouncedSearch = useDebounce(filters.search, 500);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRecruitment, setEditingRecruitment] =
-    useState<Recruitment | null>(null);
-
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
+  const { message } = App.useApp();
+  const { token } = theme.useToken();
 
   // Cập nhật URL khi filters thay đổi
   useEffect(() => {
@@ -77,13 +78,14 @@ export default function RecruitmentManagement() {
     filters.salary,
     filters.page,
     filters.pageSize,
+    message,
   ]);
 
   useEffect(() => {
     fetchRecruitments();
   }, [fetchRecruitments]);
 
-  // CRUD handlers
+  // Thêm tin tuyển dụng
   const handleAddRecruitment = async (values: Omit<Recruitment, "id">) => {
     try {
       await api.post("/recruitments", {
@@ -99,6 +101,7 @@ export default function RecruitmentManagement() {
     }
   };
 
+  // Cập nhật tin
   const handleEditRecruitment = async (values: Omit<Recruitment, "id">) => {
     if (!editingRecruitment) return;
     try {
@@ -116,6 +119,7 @@ export default function RecruitmentManagement() {
     }
   };
 
+  // Xóa tin
   const handleDelete = useCallback(
     async (id: string) => {
       try {
@@ -127,9 +131,10 @@ export default function RecruitmentManagement() {
         message.error("Xóa thất bại");
       }
     },
-    [fetchRecruitments]
+    [fetchRecruitments, message]
   );
 
+  // Cột bảng
   const columns: ColumnsType<Recruitment> = useMemo(
     () => [
       { title: "Tiêu đề", dataIndex: "title", key: "title", width: 180 },
@@ -190,7 +195,6 @@ export default function RecruitmentManagement() {
           </ul>
         ),
       },
-
       {
         title: "Hành động",
         key: "action",
@@ -200,17 +204,19 @@ export default function RecruitmentManagement() {
           <Space>
             <Button
               type="text"
-              icon={<EditOutlined />}
+              icon={<EditOutlined style={{ color: token.colorPrimary }} />}
               onClick={() => {
                 setEditingRecruitment(record);
                 setIsModalOpen(true);
               }}
             />
             <Popconfirm
-              title="Xóa tin tuyển dụng này?"
+              title="Xác nhận xóa"
+              description={`Bạn có chắc muốn xóa tin tuyển dụng "${record.title}"?`}
               onConfirm={() => handleDelete(record.id)}
               okText="Xóa"
               cancelText="Hủy"
+              okButtonProps={{ danger: true }}
             >
               <Button type="text" danger icon={<DeleteOutlined />} />
             </Popconfirm>
@@ -218,12 +224,31 @@ export default function RecruitmentManagement() {
         ),
       },
     ],
-    [handleDelete]
+    [handleDelete, token.colorPrimary]
   );
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+    <Card
+      title="Quản lý tin tuyển dụng"
+      style={{
+        background: token.colorBgContainer,
+        borderRadius: token.borderRadiusLG,
+        boxShadow: token.boxShadowTertiary,
+      }}
+    >
+      {/* Hàng chứa bộ lọc + nút thêm */}
+      <div
+        style={{
+          marginBottom: token.margin,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          width: "100%",
+        }}
+      >
+        {/* Bộ lọc tuyển dụng */}
         <RecruitmentFilter
           filters={filters}
           locations={Array.from(new Set(data.map((d) => d.location)))}
@@ -242,6 +267,7 @@ export default function RecruitmentManagement() {
           }
         />
 
+        {/* Nút thêm tin tuyển dụng */}
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -283,6 +309,6 @@ export default function RecruitmentManagement() {
         initialValues={editingRecruitment || undefined}
         isEdit={!!editingRecruitment}
       />
-    </div>
+    </Card>
   );
 }

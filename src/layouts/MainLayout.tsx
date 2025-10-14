@@ -7,12 +7,14 @@ const { Content, Sider } = Layout;
 
 interface MainLayoutProps {
   children: React.ReactNode;
+  isDark: boolean;
+  setIsDark: (val: boolean) => void;
 }
 
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout({ children, isDark, setIsDark }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(() => {
     const stored = localStorage.getItem("sidebarCollapsed");
-    return stored ? stored === "true" : false; // mặc định mở
+    return stored ? stored === "true" : false;
   });
 
   useEffect(() => {
@@ -21,22 +23,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <Layout className="min-h-screen">
-      {/* Sidebar */}
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        trigger={null}
-        width={220}
-      >
+      <Sider collapsible collapsed={collapsed} trigger={null} width={220}>
         <Sidebar collapsed={collapsed} />
       </Sider>
 
-      {/* Main content */}
       <Layout className="flex flex-col min-h-screen">
-        <HeaderBar collapsed={collapsed} setCollapsed={setCollapsed} />
-        <Content className="p-6 flex-1 overflow-auto bg-gray-50">
-          {children}
-        </Content>
+        <HeaderBar
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          isDark={isDark}
+          setIsDark={setIsDark}
+        />
+        <Content className="p-6 flex-1 overflow-auto">{children}</Content>
       </Layout>
     </Layout>
   );

@@ -1,3 +1,4 @@
+// routes/AppRoutes.tsx
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
 import Settings from "../pages/Settings";
@@ -12,106 +13,60 @@ import PrivateRouter from "../layouts/PrivateRoute";
 import LoginPage from "../pages/LoginPage";
 import ApplicationForm from "../pages/application/ApplicationForm";
 import ApplicationManagement from "../pages/application/ApplicationManagement";
+import type { ReactNode } from "react";
 
-export default function AppRoutes() {
+// Khai báo kiểu props cho component
+interface AppRoutesProps {
+  isDark: boolean;
+  setIsDark: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export default function AppRoutes({ isDark, setIsDark }: AppRoutesProps) {
+  // Khai báo kiểu cho hàm wrap
+  const wrap = (element: ReactNode) => (
+    <MainLayout isDark={isDark} setIsDark={setIsDark}>
+      {element}
+    </MainLayout>
+  );
+
   return (
     <Routes>
       {/* Public pages */}
       <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/"
-        element={
-          <MainLayout>
-            <Home />
-          </MainLayout>
-        }
-      />
-      <Route
-        path="/recruitments"
-        element={
-          <MainLayout>
-            <RecruitmentList />
-          </MainLayout>
-        }
-      />
-      <Route
-        path="/recruitment/:id"
-        element={
-          <MainLayout>
-            <RecruitmentDetail />
-          </MainLayout>
-        }
-      />
+      <Route path="/" element={wrap(<Home />)} />
+      <Route path="/recruitments" element={wrap(<RecruitmentList />)} />
+      <Route path="/recruitment/:id" element={wrap(<RecruitmentDetail />)} />
+      <Route path="/apply" element={wrap(<ApplicationForm />)} />
 
       {/* Private pages (admin only) */}
       <Route
         path="/settings"
-        element={
-          <PrivateRouter adminOnly>
-            <MainLayout>
-              <Settings />
-            </MainLayout>
-          </PrivateRouter>
-        }
+        element={<PrivateRouter adminOnly>{wrap(<Settings />)}</PrivateRouter>}
       />
       <Route
         path="/team/member"
-        element={
-          <PrivateRouter adminOnly>
-            <MainLayout>
-              <TeamMember />
-            </MainLayout>
-          </PrivateRouter>
-        }
+        element={<PrivateRouter adminOnly>{wrap(<TeamMember />)}</PrivateRouter>}
       />
       <Route
         path="/team/management"
         element={
-          <PrivateRouter adminOnly>
-            <MainLayout>
-              <TeamManagement />
-            </MainLayout>
-          </PrivateRouter>
+          <PrivateRouter adminOnly>{wrap(<TeamManagement />)}</PrivateRouter>
         }
       />
       <Route
         path="/job/management"
-        element={
-          <PrivateRouter adminOnly>
-            <MainLayout>
-              <JobManagement />
-            </MainLayout>
-          </PrivateRouter>
-        }
+        element={<PrivateRouter adminOnly>{wrap(<JobManagement />)}</PrivateRouter>}
       />
       <Route
         path="/recruitment/management"
         element={
-          <PrivateRouter adminOnly>
-            <MainLayout>
-              <RecruitmentManagement />
-            </MainLayout>
-          </PrivateRouter>
+          <PrivateRouter adminOnly>{wrap(<RecruitmentManagement />)}</PrivateRouter>
         }
       />
-
-      <Route
-        path="/apply"
-        element={
-          <MainLayout>
-            <ApplicationForm />
-          </MainLayout>
-        }
-      />
-
       <Route
         path="/application/management"
         element={
-          <PrivateRouter adminOnly>
-            <MainLayout>
-              <ApplicationManagement />
-            </MainLayout>
-          </PrivateRouter>
+          <PrivateRouter adminOnly>{wrap(<ApplicationManagement />)}</PrivateRouter>
         }
       />
     </Routes>

@@ -1,11 +1,11 @@
-import { Layout, Button, Switch, Dropdown, message } from "antd";
+import { Layout, Button, Switch, Dropdown, message, theme, Avatar, Space } from "antd";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   UserOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import { useAuth } from "../context/useAuth"; // hook AuthContext
+import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
 
 const { Header } = Layout;
@@ -13,21 +13,19 @@ const { Header } = Layout;
 interface HeaderBarProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  isDark: boolean;
+  setIsDark: (dark: boolean) => void;
 }
 
-export default function HeaderBar({ collapsed, setCollapsed }: HeaderBarProps) {
-  const [isDark, setIsDark] = useState(
-    () => localStorage.getItem("theme") === "dark"
-  );
+export default function HeaderBar({
+  collapsed,
+  setCollapsed,
+  isDark,
+  setIsDark,
+}: HeaderBarProps) {
+  const { token } = theme.useToken(); // Lấy màu hiện tại từ AntD theme
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  // Theme effect
-  useEffect(() => {
-    const theme = isDark ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [isDark]);
 
   const handleLogout = () => {
     logout();
@@ -38,25 +36,37 @@ export default function HeaderBar({ collapsed, setCollapsed }: HeaderBarProps) {
   const items = [
     {
       key: "1",
+      icon: <LogoutOutlined />,
       label: "Đăng xuất",
       onClick: handleLogout,
     },
   ];
 
   return (
-    <Header className="shadow flex items-center justify-between px-4 bg-[var(--color-header)] text-white">
-      {/* Nút thu gọn sidebar */}
+    <Header
+      className="flex items-center justify-between px-4 transition-colors duration-300"
+      style={{
+        background: token.colorBgContainer, // Đồng bộ màu nền
+        color: token.colorText, // Chữ tự đổi theo theme
+        boxShadow: token.boxShadowSecondary, // Bóng đổ chuẩn AntD
+        paddingLeft: 0,
+      }}
+    >
+      {/* Nút thu gọn Sidebar */}
       <Button
         type="text"
         icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         onClick={() => setCollapsed(!collapsed)}
-        className="!text-[var(--color-text)]"
+        style={{
+          color: token.colorText, // Icon theo theme
+        }}
       />
 
-      <div className="flex items-center gap-4">
-        {/* Dark/Light mode */}
+      {/* Nhóm chức năng bên phải */}
+      <Space size="large" align="center">
+        {/* Nút Dark / Light mode */}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium select-none">
             {isDark ? "Dark" : "Light"} Mode
           </span>
           <Switch
@@ -67,23 +77,27 @@ export default function HeaderBar({ collapsed, setCollapsed }: HeaderBarProps) {
           />
         </div>
 
-        {/* User login/logout */}
+        {/* Dropdown User */}
         {user ? (
-          <Dropdown menu={{ items }} placement="bottomRight">
-            <Button
-              icon={<UserOutlined />}
-              type="text"
-              className="!text-[var(--color-text)]"
-            >
-              {user.name}
-            </Button>
+          <Dropdown menu={{ items }} placement="bottomRight" arrow>
+            <Space className="cursor-pointer">
+              <Avatar
+                size="small"
+                icon={<UserOutlined />}
+                style={{
+                  backgroundColor: token.colorPrimary,
+                  color: token.colorWhite,
+                }}
+              />
+              <span className="font-medium">{user.name}</span>
+            </Space>
           </Dropdown>
         ) : (
           <Button type="primary" onClick={() => navigate("/login")}>
             Đăng nhập
           </Button>
         )}
-      </div>
+      </Space>
     </Header>
   );
 }

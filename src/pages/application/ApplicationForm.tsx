@@ -1,15 +1,16 @@
-import { Form, Input, Button, Upload, message } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { Form, Input, Button, Upload, message, Card, Typography, Result } from "antd";
+import { UploadOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "../../api/config";
+
+const { Title, Text } = Typography;
 
 export default function ApplicationForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
 
-  // Lấy recruitmentId và title từ query string
   const recruitmentId = queryParams.get("id") || "";
   const positionTitle = queryParams.get("title") || "";
 
@@ -27,8 +28,8 @@ export default function ApplicationForm() {
     formData.append("name", values.name);
     formData.append("email", values.email);
     formData.append("phone", values.phone);
-    formData.append("position", positionTitle); // title
-    formData.append("recruitmentId", recruitmentId); // id
+    formData.append("position", positionTitle);
+    formData.append("recruitmentId", recruitmentId);
     formData.append("resume", file);
 
     setLoading(true);
@@ -49,47 +50,109 @@ export default function ApplicationForm() {
 
   if (submitted) {
     return (
-      <div className="p-8 bg-white rounded shadow text-center max-w-md mx-auto">
-        <h2 className="text-2xl font-semibold mb-4">Cảm ơn bạn đã ứng tuyển!</h2>
-        <p>Bạn sẽ được chuyển về trang chủ trong giây lát...</p>
-      </div>
+      <Card
+        style={{
+          maxWidth: 480,
+          margin: "60px auto",
+          textAlign: "center",
+          borderRadius: 16,
+        }}
+      >
+        <Result
+          status="success"
+          title="Cảm ơn bạn đã ứng tuyển!"
+          subTitle="Bạn sẽ được chuyển về trang chủ trong giây lát..."
+        />
+      </Card>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white rounded shadow max-w-lg mx-auto">
-      {/* Nút Quay lại */}
-      <div>
-        <Button type="default" className="mb-2" onClick={() => navigate(-1)}>
-          &larr; Quay lại
-        </Button>
-      </div>
-      <h2 className="text-xl font-semibold mb-4">Ứng tuyển vị trí: {positionTitle}</h2>
+    <Card
+      title={
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(-1)}
+          />
+          <Title level={4} style={{ margin: 0 }}>
+            Ứng tuyển vị trí: {positionTitle}
+          </Title>
+        </div>
+      }
+      style={{
+        maxWidth: 600,
+        margin: "60px auto",
+        borderRadius: 16,
+      }}
+    >
       <Form layout="vertical" onFinish={onFinish}>
-        <Form.Item name="name" label="Họ tên" rules={[{ required: true }]}>
-          <Input />
+        <Form.Item
+          name="name"
+          label="Họ và tên"
+          rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
+        >
+          <Input placeholder="Nhập họ tên của bạn" />
         </Form.Item>
-        <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
-          <Input />
+
+        <Form.Item
+          name="email"
+          label="Email"
+          rules={[
+            { required: true, message: "Vui lòng nhập email!" },
+            { type: "email", message: "Email không hợp lệ!" },
+          ]}
+        >
+          <Input placeholder="example@email.com" />
         </Form.Item>
-        <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true }]}>
-          <Input />
+
+        <Form.Item
+          name="phone"
+          label="Số điện thoại"
+          rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
+        >
+          <Input placeholder="Nhập số điện thoại" />
         </Form.Item>
-        <Form.Item label="Hồ sơ đính kèm (PDF)">
+
+        <Form.Item
+          label="Hồ sơ đính kèm (PDF)"
+          required
+          tooltip="Chỉ nhận 1 file PDF duy nhất"
+        >
           <Upload
             beforeUpload={(file) => {
+              const isPDF = file.type === "application/pdf";
+              if (!isPDF) {
+                message.error("Chỉ chấp nhận file PDF!");
+                return Upload.LIST_IGNORE;
+              }
               setFile(file);
-              return false;
+              return false; // chặn upload tự động
             }}
             maxCount={1}
           >
             <Button icon={<UploadOutlined />}>Chọn file</Button>
           </Upload>
+          {file && (
+            <Text type="secondary" style={{ marginTop: 8, display: "block" }}>
+              File đã chọn: <strong>{file.name}</strong>
+            </Text>
+          )}
         </Form.Item>
-        <Button type="primary" htmlType="submit" loading={loading} block>
-          Gửi hồ sơ
-        </Button>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            block
+            size="large"
+          >
+            Gửi hồ sơ
+          </Button>
+        </Form.Item>
       </Form>
-    </div>
+    </Card>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { Card, Row, Col, Spin, Button, Tag } from "antd";
+import { Card, Row, Col, Spin, Button, Tag, theme } from "antd";
 import { Link } from "react-router-dom";
+import { DownOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../api/config";
 import type { Recruitment } from "../types/Recruitment";
@@ -15,6 +16,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const { token } = theme.useToken(); // Lấy token từ ConfigProvider
 
   const limit = 6;
 
@@ -66,8 +68,24 @@ export default function Home() {
   }, [loading, hasMore]);
 
   return (
-    <div className="p-6 mx-[20px] min-h-screen pb-20">
-      <h1 className="text-4xl font-bold mb-8 text-center text-blue-600">
+    <div
+      style={{
+        background: token.colorBgBase,
+        color: token.colorText,
+        padding: 24,
+        minHeight: "100vh",
+        transition: "background 0.3s ease, color 0.3s ease",
+      }}
+    >
+      <h1
+        style={{
+          textAlign: "center",
+          fontSize: 32,
+          fontWeight: 700,
+          marginBottom: 32,
+          color: token.colorPrimary,
+        }}
+      >
         Danh sách tuyển dụng
       </h1>
 
@@ -77,52 +95,100 @@ export default function Home() {
 
           return (
             <Col xs={24} sm={12} md={8} key={job.id}>
-              <div className="h-full flex flex-col">
-                <Card
-                  hoverable
-                  style={{ border: "none", borderRadius: "1rem", height: "100%" }}
-                  className="rounded-3xl border border-gray-200 shadow-lg overflow-hidden transition-transform bg-white hover:scale-105"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <h2 className="text-lg font-semibold text-gray-800">
-                      {job.title}
-                    </h2>
-                    {isExpired ? (
-                      <Tag color="red">Hết hạn</Tag>
-                    ) : (
-                      <Tag color="green">Đang tuyển</Tag>
-                    )}
-                  </div>
+              <Card
+                hoverable
+                style={{
+                  height: "100%",
+                  background: token.colorBgContainer,
+                  color: token.colorText,
+                  borderRadius: token.borderRadiusLG,
+                  boxShadow: token.boxShadowTertiary,
+                  transition: "transform 0.3s",
+                }}
+                className="hover:scale-105"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <h2
+                    style={{
+                      color: token.colorTextHeading,
+                      fontSize: 18,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {job.title}
+                  </h2>
+                  {isExpired ? (
+                    <Tag color="red">Hết hạn</Tag>
+                  ) : (
+                    <Tag color="green">Đang tuyển</Tag>
+                  )}
+                </div>
 
-                  <div className="text-sm text-gray-600 space-y-2 mb-4 flex-grow">
-                    <p>
-                      <strong>Địa điểm:</strong> {job.location}
-                    </p>
-                    <p>
-                      <strong>Mức lương:</strong> {job.salary}
-                    </p>
-                    <p>
-                      <strong>Hạn nộp:</strong>{" "}
-                      {dayjs(job.deadline).format("DD-MM-YYYY")}
-                    </p>
-                  </div>
+                <div style={{ fontSize: 14, lineHeight: 1.7 }}>
+                  <p>
+                    <strong>Địa điểm:</strong> {job.location}
+                  </p>
+                  <p>
+                    <strong>Mức lương:</strong> {job.salary}
+                  </p>
+                  <p>
+                    <strong>Hạn nộp:</strong>{" "}
+                    {dayjs(job.deadline).format("DD-MM-YYYY")}
+                  </p>
+                </div>
 
-                  <Link to={`/recruitment/${job.id}`}>
-                    <Button type="primary" block size="middle">
-                      Xem chi tiết
-                    </Button>
-                  </Link>
-                </Card>
-              </div>
+                <Link to={`/recruitment/${job.id}`}>
+                  <Button
+                    type="primary"
+                    block
+                    size="middle"
+                    style={{
+                      marginTop: 16,
+                      backgroundColor: token.colorPrimary,
+                      borderColor: token.colorPrimary,
+                    }}
+                  >
+                    Xem chi tiết
+                  </Button>
+                </Link>
+              </Card>
             </Col>
           );
         })}
       </Row>
 
-      {loading && <Spin size="large" style={{ display: "block", margin: "20px auto" }} />}
+      {hasMore && !loading && (
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 40,
+            color: token.colorTextSecondary,
+            animation: "bounce 1.5s infinite",
+          }}
+        >
+          <DownOutlined style={{ fontSize: 24 }} />
+        </div>
+      )}
+
+      {loading && (
+        <Spin
+          size="large"
+          style={{
+            display: "block",
+            margin: "24px auto",
+            color: token.colorText,
+          }}
+        />
+      )}
 
       {!hasMore && (
-        <p className="text-center text-gray-500" style={{ marginTop: "60px" }}>
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: 60,
+            color: token.colorTextSecondary,
+          }}
+        >
           Bạn đã xem hết danh sách tuyển dụng
         </p>
       )}

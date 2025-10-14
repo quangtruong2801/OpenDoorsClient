@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Table, Space, Button, Popconfirm, message, Tag } from "antd";
+import {
+  Table,
+  Space,
+  Button,
+  Popconfirm,
+  message,
+  Tag,
+  Card,
+  theme,
+} from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
@@ -14,6 +23,8 @@ import type { Management } from "../../types/Management";
 import { SOCIAL_OPTIONS } from "../../constants/socials";
 
 export default function TeamMember() {
+  const { token } = theme.useToken(); //lấy màu từ theme antd
+
   const [data, setData] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -28,12 +39,8 @@ export default function TeamMember() {
   });
 
   const debouncedFilters = useDebounce(filters, 500);
-
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
-  const [pageSize, setPageSize] = useState(
-    Number(searchParams.get("pageSize")) || 10
-  );
-
+  const [pageSize, setPageSize] = useState(Number(searchParams.get("pageSize")) || 10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
 
@@ -42,7 +49,7 @@ export default function TeamMember() {
 
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // ✅ Sync URL
+  // Sync URL
   useEffect(() => {
     const params: Record<string, string> = {};
     if (filters.search) params.search = filters.search;
@@ -54,7 +61,7 @@ export default function TeamMember() {
     setSearchParams(params);
   }, [filters, page, pageSize, setSearchParams]);
 
-  // ✅ Fetch job & team list
+  // Fetch job & team list
   useEffect(() => {
     const fetchMeta = async () => {
       try {
@@ -64,15 +71,14 @@ export default function TeamMember() {
         ]);
         setJobList(jobsRes.data);
         setTeamList(teamsRes.data);
-      } catch (err) {
-        console.error(err);
+      } catch {
         message.error("Không tải được danh sách công việc hoặc team!");
       }
     };
     fetchMeta();
   }, []);
 
-  // ✅ Fetch members
+  // Fetch members
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
@@ -89,8 +95,7 @@ export default function TeamMember() {
       const { data: items, total } = res.data;
       setData(items);
       setTotal(total);
-    } catch (err) {
-      console.error(err);
+    } catch {
       message.error("Lỗi tải danh sách thành viên!");
     } finally {
       setLoading(false);
@@ -101,15 +106,14 @@ export default function TeamMember() {
     fetchMembers();
   }, [fetchMembers]);
 
-  // ✅ Handlers
+  // CRUD handlers
   const handleAddMember = async (values: NewMember) => {
     try {
       await axios.post("/members", values);
       message.success("Thêm thành viên thành công!");
       setIsModalOpen(false);
       fetchMembers();
-    } catch (err) {
-      console.error(err);
+    } catch {
       message.error("Thêm thất bại");
     }
   };
@@ -122,8 +126,7 @@ export default function TeamMember() {
       setIsModalOpen(false);
       setEditingMember(null);
       fetchMembers();
-    } catch (err) {
-      console.error(err);
+    } catch {
       message.error("Cập nhật thất bại");
     }
   };
@@ -134,15 +137,14 @@ export default function TeamMember() {
         await axios.delete(`/members/${id}`);
         message.success("Xóa thành viên thành công!");
         fetchMembers();
-      } catch (err) {
-        console.error(err);
+      } catch {
         message.error("Xóa thất bại");
       }
     },
     [fetchMembers]
   );
 
-  // ✅ Cấu hình cột
+  // Cấu hình cột
   const columns: ColumnsType<Member> = useMemo(
     () => [
       {
@@ -165,27 +167,24 @@ export default function TeamMember() {
       },
       { title: "Họ và tên", dataIndex: "name", key: "name", width: 180 },
       { title: "Email", dataIndex: "email", key: "email", width: 200 },
-      {
-        title: "Ngày sinh",
-        dataIndex: "birthday",
-        key: "birthday",
-        width: 150,
-      },
+      { title: "Ngày sinh", dataIndex: "birthday", key: "birthday", width: 150 },
       {
         title: "Sở thích",
         dataIndex: "hobbies",
         key: "hobbies",
         width: 220,
         ellipsis: true,
-        render: (desc: string[]) => (
-          <ul style={{ listStyleType: "none", paddingLeft: "1rem" }}>
-            {desc?.map((item, idx) => (
-              <li key={idx}>- {item}</li>
-            ))}
-          </ul>
-        ),
+        render: (desc: string[]) =>
+          desc?.length ? (
+            <ul style={{ listStyleType: "none", margin: 0, paddingLeft: 16 }}>
+              {desc.map((item, idx) => (
+                <li key={idx}>- {item}</li>
+              ))}
+            </ul>
+          ) : (
+            "—"
+          ),
       },
-
       {
         title: "Mạng xã hội",
         dataIndex: "socials",
@@ -201,14 +200,19 @@ export default function TeamMember() {
                     o.label.toLowerCase() === s.platform.toLowerCase()
                 );
                 const IconComponent = option?.icon;
-                const color = option?.color || "#000";
+                const color = option?.color || token.colorText;
                 return (
                   <a
                     key={s.platform + s.url}
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color,
+                    }}
                   >
                     {IconComponent && (
                       <IconComponent style={{ color, fontSize: 16 }} />
@@ -222,12 +226,7 @@ export default function TeamMember() {
             "—"
           ),
       },
-      {
-        title: "Ngày bắt đầu",
-        dataIndex: "startDate",
-        key: "startDate",
-        width: 150,
-      },
+      { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate", width: 150 },
       { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
       {
         title: "Công việc",
@@ -259,20 +258,40 @@ export default function TeamMember() {
                 setIsModalOpen(true);
               }}
             />
-            <Popconfirm title="Xóa thành viên này?" onConfirm={() => handleDelete(record.id)} okText="Xóa"
-            cancelText="Hủy">
+            <Popconfirm
+              title="Xóa thành viên này?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
               <Button type="text" icon={<DeleteOutlined />} danger />
             </Popconfirm>
           </Space>
         ),
       },
     ],
-    [handleDelete]
+    [handleDelete, token.colorText]
   );
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+    <Card
+      title="Quản lý thành viên"
+      variant="borderless"
+      style={{
+        background: token.colorBgContainer,
+        color: token.colorText,
+        boxShadow: token.boxShadow,
+      }}
+    >
+      <Space
+        direction="horizontal"
+        align="center"
+        style={{
+          width: "100%",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
         <MemberFilter
           filters={filters}
           jobList={jobList}
@@ -297,7 +316,7 @@ export default function TeamMember() {
         >
           Thêm thành viên
         </Button>
-      </div>
+      </Space>
 
       <Table
         columns={columns}
@@ -328,6 +347,6 @@ export default function TeamMember() {
         initialValues={editingMember || undefined}
         isEdit={!!editingMember}
       />
-    </div>
+    </Card>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Table, Button, message, Space, Popconfirm } from "antd";
+import { Table, Button, message, Space, Popconfirm, Card } from "antd";
 import {
   EditOutlined,
   PlusOutlined,
@@ -18,13 +18,11 @@ import useDebounce from "../../hooks/useDebounce";
 export default function TeamManagement() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Gom filter thành 1 state duy nhất
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
     memberFilter: searchParams.get("memberFilter") || "all",
   });
 
-  // Dùng debounce để tránh fetch liên tục khi user đang gõ
   const debouncedFilters = useDebounce(filters, 500);
 
   const [data, setData] = useState<Management[]>([]);
@@ -44,12 +42,10 @@ export default function TeamManagement() {
       const res = await axios.get<Management[]>("/teams");
       const result = res.data;
 
-      // Lọc theo từ khóa (đã debounce)
       let filtered = result.filter((d) =>
         d.teamName.toLowerCase().includes(debouncedFilters.search.toLowerCase())
       );
 
-      // Lọc theo số lượng thành viên
       filtered = filtered.filter((d) => {
         if (debouncedFilters.memberFilter === "lt5") return d.members < 5;
         if (debouncedFilters.memberFilter === "5to10")
@@ -72,7 +68,6 @@ export default function TeamManagement() {
     fetchData();
   }, [fetchData]);
 
-  // Thay đổi filter chung
   const handleFilterChange = (
     key: "search" | "memberFilter",
     value: string
@@ -83,7 +78,6 @@ export default function TeamManagement() {
     setPage(1);
   };
 
-  // Reset filter
   const handleResetFilters = () => {
     const reset = { search: "", memberFilter: "all" };
     setFilters(reset);
@@ -91,7 +85,6 @@ export default function TeamManagement() {
     setPage(1);
   };
 
-  // Add/Edit team
   const handleSaveTeam = async (values: { teamName: string }) => {
     try {
       if (editingTeam) {
@@ -110,13 +103,11 @@ export default function TeamManagement() {
     }
   };
 
-  // Edit team
   const handleEdit = (record: Management) => {
     setEditingTeam(record);
     setIsModalOpen(true);
   };
 
-  // Delete team
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`/teams/${id}`);
@@ -128,20 +119,19 @@ export default function TeamManagement() {
     }
   };
 
-  // Cột bảng
   const columns: ColumnsType<Management> = [
-    { title: "Team Name", dataIndex: "teamName", key: "teamName", width: 200 },
-    { title: "Members", dataIndex: "members", key: "members", width: 150 },
+    { title: "Tên Team", dataIndex: "teamName", key: "teamName", width: 250 },
+    { title: "Số thành viên", dataIndex: "members", key: "members", width: 150 },
     {
-      title: "Action",
+      title: "Thao tác",
       key: "action",
       width: 120,
-      fixed: "right",
-      render: (_: string, record: Management) => (
+      align: "center",
+      render: (_, record) => (
         <Space size="middle">
           <Button
             type="text"
-            icon={<EditOutlined className="text-blue-600" />}
+            icon={<EditOutlined style={{ color: "#1677ff" }} />}
             onClick={() => handleEdit(record)}
           />
           <Popconfirm
@@ -150,7 +140,7 @@ export default function TeamManagement() {
             okText="Xóa"
             cancelText="Hủy"
           >
-          <Button type="text" icon={<DeleteOutlined />} danger />
+            <Button type="text" icon={<DeleteOutlined />} danger />
           </Popconfirm>
         </Space>
       ),
@@ -158,25 +148,24 @@ export default function TeamManagement() {
   ];
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+    <Card title="Quản lý Team" variant="borderless">
+      <Space
+        style={{
+          width: "100%",
+          justifyContent: "space-between",
+          marginBottom: 16,
+          flexWrap: "wrap",
+        }}
+      >
         <Space>
-          <div className="flex-1 min-w-[300px]">
-            <TeamFilter
-              search={filters.search}
-              memberFilter={filters.memberFilter}
-              onSearchChange={(v) => handleFilterChange("search", v)}
-              onMemberFilterChange={(v) =>
-                handleFilterChange("memberFilter", v)
-              }
-            />
-          </div>
-
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={handleResetFilters}
-            className="whitespace-nowrap"
+          <TeamFilter
+            search={filters.search}
+            memberFilter={filters.memberFilter}
+            onSearchChange={(v) => handleFilterChange("search", v)}
+            onMemberFilterChange={(v) => handleFilterChange("memberFilter", v)}
           />
+          <Button icon={<ReloadOutlined />} onClick={handleResetFilters}>
+          </Button>
         </Space>
 
         <Button
@@ -189,7 +178,7 @@ export default function TeamManagement() {
         >
           Thêm Team
         </Button>
-      </div>
+      </Space>
 
       <Table
         columns={columns}
@@ -220,6 +209,6 @@ export default function TeamManagement() {
         initialValues={editingTeam || undefined}
         isEdit={!!editingTeam}
       />
-    </div>
+    </Card>
   );
 }
