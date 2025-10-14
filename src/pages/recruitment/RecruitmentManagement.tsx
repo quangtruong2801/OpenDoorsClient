@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Table, Button, Space, Popconfirm, App, Card, theme } from "antd";
+import { Table, Button, Space, Popconfirm, Card, theme, message } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
@@ -16,8 +16,7 @@ export default function RecruitmentManagement() {
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRecruitment, setEditingRecruitment] =
-    useState<Recruitment | null>(null);
+  const [editingRecruitment, setEditingRecruitment] = useState<Recruitment | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState({
@@ -30,10 +29,12 @@ export default function RecruitmentManagement() {
 
   const debouncedSearch = useDebounce(filters.search, 500);
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
-  const { message } = App.useApp();
   const { token } = theme.useToken();
 
-  // Cập nhật URL khi filters thay đổi
+  // Message API
+  const [msgApi, contextHolder] = message.useMessage();
+
+  // Update URL params when filters change
   useEffect(() => {
     const params: Record<string, string> = {};
     if (filters.search) params.search = filters.search;
@@ -44,7 +45,7 @@ export default function RecruitmentManagement() {
     setSearchParams(params);
   }, [filters, setSearchParams]);
 
-  // Fetch API
+  // Fetch data from API
   const fetchRecruitments = useCallback(async () => {
     setLoading(true);
     try {
@@ -59,6 +60,8 @@ export default function RecruitmentManagement() {
       });
 
       const { data: items, total } = res.data;
+
+      // Convert deadline to Date object
       setData(
         items.map((r: Recruitment) => ({
           ...r,
@@ -68,40 +71,33 @@ export default function RecruitmentManagement() {
       setTotal(total);
     } catch (err) {
       console.error(err);
-      message.error("Lỗi tải danh sách tuyển dụng");
+      msgApi.error("Lỗi tải danh sách tuyển dụng");
     } finally {
       setLoading(false);
     }
-  }, [
-    debouncedSearch,
-    filters.location,
-    filters.salary,
-    filters.page,
-    filters.pageSize,
-    message,
-  ]);
+  }, [debouncedSearch, filters.location, filters.salary, filters.page, filters.pageSize, msgApi]);
 
   useEffect(() => {
     fetchRecruitments();
   }, [fetchRecruitments]);
 
-  // Thêm tin tuyển dụng
+  // Add recruitment
   const handleAddRecruitment = async (values: Omit<Recruitment, "id">) => {
     try {
       await api.post("/recruitments", {
         ...values,
         deadline: values.deadline?.toISOString() || null,
       });
-      message.success("Thêm tin tuyển dụng thành công!");
+      msgApi.success("Thêm tin tuyển dụng thành công!");
       setIsModalOpen(false);
       fetchRecruitments();
     } catch (err) {
       console.error(err);
-      message.error("Thêm thất bại");
+      msgApi.error("Thêm thất bại");
     }
   };
 
-  // Cập nhật tin
+  // Edit recruitment
   const handleEditRecruitment = async (values: Omit<Recruitment, "id">) => {
     if (!editingRecruitment) return;
     try {
@@ -109,43 +105,38 @@ export default function RecruitmentManagement() {
         ...values,
         deadline: values.deadline?.toISOString() || null,
       });
-      message.success("Cập nhật tin thành công!");
+      msgApi.success("Cập nhật tin thành công!");
       setEditingRecruitment(null);
       setIsModalOpen(false);
       fetchRecruitments();
     } catch (err) {
       console.error(err);
-      message.error("Cập nhật thất bại");
+      msgApi.error("Cập nhật thất bại");
     }
   };
 
-  // Xóa tin
+  // Delete recruitment
   const handleDelete = useCallback(
     async (id: string) => {
       try {
         await api.delete(`/recruitments/${id}`);
-        message.success("Xóa thành công!");
+        msgApi.success("Xóa thành công!");
         fetchRecruitments();
       } catch (err) {
         console.error(err);
-        message.error("Xóa thất bại");
+        msgApi.error("Xóa thất bại");
       }
     },
-    [fetchRecruitments, message]
+    [fetchRecruitments, msgApi]
   );
 
-  // Cột bảng
+  // Table columns
   const columns: ColumnsType<Recruitment> = useMemo(
     () => [
       { title: "Tiêu đề", dataIndex: "title", key: "title", width: 180 },
       { title: "Mức lương", dataIndex: "salary", key: "salary", width: 120 },
       { title: "Địa điểm", dataIndex: "location", key: "location", width: 150 },
-      {
-        title: "Kinh nghiệm",
-        dataIndex: "experience",
-        key: "experience",
-        width: 120,
-      },
+      { title: "Kinh nghiệm", dataIndex: "experience", key: "experience", width: 120 },
       {
         title: "Hạn nộp",
         dataIndex: "deadline",
@@ -236,7 +227,10 @@ export default function RecruitmentManagement() {
         boxShadow: token.boxShadowTertiary,
       }}
     >
-      {/* Hàng chứa bộ lọc + nút thêm */}
+      {/* Render message context */}
+      {contextHolder}
+
+      {/* Filter + Add Button */}
       <div
         style={{
           marginBottom: token.margin,
@@ -248,26 +242,16 @@ export default function RecruitmentManagement() {
           width: "100%",
         }}
       >
-        {/* Bộ lọc tuyển dụng */}
         <RecruitmentFilter
           filters={filters}
           locations={Array.from(new Set(data.map((d) => d.location)))}
           salaries={Array.from(new Set(data.map((d) => d.salary)))}
-          onChange={(newFilters) =>
-            setFilters({ ...filters, ...newFilters, page: 1 })
-          }
+          onChange={(newFilters) => setFilters({ ...filters, ...newFilters, page: 1 })}
           onReset={() =>
-            setFilters({
-              search: "",
-              location: "",
-              salary: "",
-              page: 1,
-              pageSize: filters.pageSize,
-            })
+            setFilters({ search: "", location: "", salary: "", page: 1, pageSize: filters.pageSize })
           }
         />
 
-        {/* Nút thêm tin tuyển dụng */}
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -292,8 +276,7 @@ export default function RecruitmentManagement() {
           total,
           showSizeChanger: true,
           pageSizeOptions,
-          onChange: (p, ps) =>
-            setFilters({ ...filters, page: p, pageSize: ps }),
+          onChange: (p, ps) => setFilters({ ...filters, page: p, pageSize: ps }),
         }}
       />
 
@@ -303,9 +286,7 @@ export default function RecruitmentManagement() {
           setIsModalOpen(false);
           setEditingRecruitment(null);
         }}
-        onSubmit={
-          editingRecruitment ? handleEditRecruitment : handleAddRecruitment
-        }
+        onSubmit={editingRecruitment ? handleEditRecruitment : handleAddRecruitment}
         initialValues={editingRecruitment || undefined}
         isEdit={!!editingRecruitment}
       />

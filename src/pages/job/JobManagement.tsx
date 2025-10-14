@@ -5,9 +5,8 @@ import {
   Space,
   Popconfirm,
   Input,
-  App,
-  theme,
   Card,
+  message,
 } from "antd";
 import {
   EditOutlined,
@@ -25,6 +24,8 @@ import AddJobModal from "../../components/JobModal";
 import useDebounce from "../../hooks/useDebounce";
 
 export default function JobManagement() {
+  const [msgApi, contextHolder] = message.useMessage();
+
   const [data, setData] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,9 +39,6 @@ export default function JobManagement() {
   );
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
   const debouncedSearch = useDebounce(search, 500);
-
-  const { message } = App.useApp();
-  const { token } = theme.useToken();
 
   // Cập nhật URL khi search / page thay đổi
   useEffect(() => {
@@ -66,11 +64,11 @@ export default function JobManagement() {
       setData(filtered);
     } catch (err) {
       console.error(err);
-      message.error("Lỗi khi tải danh sách công việc");
+      msgApi.error("Lỗi khi tải danh sách công việc");
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, message]);
+  }, [debouncedSearch, msgApi]);
 
   useEffect(() => {
     fetchJobs();
@@ -80,12 +78,12 @@ export default function JobManagement() {
   const handleAddJob = async (values: Omit<Job, "jobId">) => {
     try {
       await api.post("/jobs", values);
-      message.success("Thêm công việc thành công!");
+      msgApi.success("Thêm công việc thành công!");
       setIsModalOpen(false);
       fetchJobs();
     } catch (err) {
       console.error(err);
-      message.error("Thêm công việc thất bại");
+      msgApi.error("Thêm công việc thất bại");
     }
   };
 
@@ -94,13 +92,13 @@ export default function JobManagement() {
     if (!editingJob) return;
     try {
       await api.put(`/jobs/${editingJob.jobId}`, values);
-      message.success("Cập nhật công việc thành công!");
+      msgApi.success("Cập nhật công việc thành công!");
       setEditingJob(null);
       setIsModalOpen(false);
       fetchJobs();
     } catch (err) {
       console.error(err);
-      message.error("Cập nhật công việc thất bại");
+      msgApi.error("Cập nhật công việc thất bại");
     }
   };
 
@@ -109,42 +107,22 @@ export default function JobManagement() {
     async (jobId: string) => {
       try {
         await api.delete(`/jobs/${jobId}`);
-        message.success("Xóa công việc thành công!");
+        msgApi.success("Xóa công việc thành công!");
         fetchJobs();
       } catch (err) {
         console.error(err);
-        message.error("Có lỗi khi xóa!");
+        msgApi.error("Có lỗi khi xóa!");
       }
     },
-    [fetchJobs, message]
+    [fetchJobs, msgApi]
   );
 
   const columns: ColumnsType<Job> = useMemo(
     () => [
-      {
-        title: "Tên công việc",
-        dataIndex: "jobName",
-        key: "jobName",
-        width: 200,
-      },
-      {
-        title: "Kỹ năng",
-        dataIndex: "skills",
-        key: "skills",
-        width: 200,
-      },
-      {
-        title: "Yêu cầu",
-        dataIndex: "requirement",
-        key: "requirement",
-        width: 220,
-      },
-      {
-        title: "Mô tả",
-        dataIndex: "description",
-        key: "description",
-        width: 250,
-      },
+      { title: "Tên công việc", dataIndex: "jobName", key: "jobName", width: 200 },
+      { title: "Kỹ năng", dataIndex: "skills", key: "skills", width: 200 },
+      { title: "Yêu cầu", dataIndex: "requirement", key: "requirement", width: 220 },
+      { title: "Mô tả", dataIndex: "description", key: "description", width: 250 },
       {
         title: "Hành động",
         key: "action",
@@ -154,27 +132,25 @@ export default function JobManagement() {
           <Space size="middle">
             <Button
               type="text"
-              icon={<EditOutlined style={{ color: token.colorPrimary }} />}
+              icon={<EditOutlined style={{ color: "#1677ff" }} />}
               onClick={() => {
                 setEditingJob(record);
                 setIsModalOpen(true);
               }}
             />
             <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc muốn xóa công việc "${record.jobName}"?`}
+              title={`Bạn có chắc muốn xóa công việc "${record.jobName}"?`}
               onConfirm={() => handleDelete(record.jobId)}
               okText="Xóa"
               cancelText="Hủy"
-              okButtonProps={{ danger: true }}
             >
-              <Button type="text" danger icon={<DeleteOutlined />} />
+              <Button type="text" icon={<DeleteOutlined />} danger />
             </Popconfirm>
           </Space>
         ),
       },
     ],
-    [handleDelete, token.colorPrimary]
+    [handleDelete]
   );
 
   const handleReset = () => {
@@ -184,85 +160,78 @@ export default function JobManagement() {
   };
 
   return (
-    <Card
-      style={{
-        background: token.colorBgContainer,
-        borderRadius: token.borderRadiusLG,
-        boxShadow: token.boxShadowTertiary,
-      }}
-      title="Quản lý công việc"
-    >
-      <Space
-        style={{
-          marginBottom: token.margin,
-          display: "flex",
-          justifyContent: "space-between",
-          width: "100%",
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Bên trái: tìm kiếm + làm mới */}
-        <Space style={{ flexWrap: "wrap" }}>
-          <Input
-            placeholder="Tìm kiếm công việc..."
-            prefix={<SearchOutlined />}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
+    <>
+      {contextHolder} {/* ✅ cần render contextHolder */}
+      <Card title="Quản lý công việc">
+        <Space
+          style={{
+            marginBottom: 16,
+            width: "100%",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+          }}
+        >
+          <Space>
+            <Input
+              placeholder="Tìm kiếm công việc..."
+              prefix={<SearchOutlined />}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              style={{ width: 260 }}
+            />
+            <Button icon={<ReloadOutlined />} onClick={handleReset}>
+
+            </Button>
+          </Space>
+
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingJob(null);
+              setIsModalOpen(true);
             }}
-            style={{ width: 260 }}
-          />
-          <Button icon={<ReloadOutlined />} onClick={handleReset}>
-            Làm mới
+          >
+            Thêm công việc
           </Button>
         </Space>
 
-        {/* Bên phải: nút thêm công việc */}
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingJob(null);
-            setIsModalOpen(true);
+        <Table
+          columns={columns}
+          dataSource={data.slice((page - 1) * pageSize, page * pageSize)}
+          rowKey="jobId"
+          loading={loading}
+          scroll={{ x: "max-content", y: 600 }}
+          pagination={{
+            current: page,
+            pageSize,
+            total: data.length,
+            showSizeChanger: true,
+            pageSizeOptions,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
           }}
-        >
-          Thêm công việc
-        </Button>
-      </Space>
+        />
 
-      <Table
-        columns={columns}
-        dataSource={data.slice((page - 1) * pageSize, page * pageSize)}
-        rowKey="jobId"
-        loading={loading}
-        scroll={{ x: "max-content", y: 600 }}
-        pagination={{
-          current: page,
-          pageSize,
-          total: data.length,
-          showSizeChanger: true,
-          pageSizeOptions,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-        }}
-      />
-
-      <AddJobModal
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingJob(null);
-        }}
-        onSubmit={(values) =>
-          editingJob
-            ? handleEditJob(values as Partial<Job>)
-            : handleAddJob(values as Omit<Job, "jobId">)
-        }
-        initialValues={editingJob || undefined}
-      />
-    </Card>
+        <AddJobModal
+          open={isModalOpen}
+          onCancel={() => {
+            setIsModalOpen(false);
+            setEditingJob(null);
+          }}
+          onSubmit={(values) =>
+            editingJob
+              ? handleEditJob(values as Partial<Job>)
+              : handleAddJob(values as Omit<Job, "jobId">)
+          }
+          initialValues={editingJob || undefined}
+        />
+      </Card>
+    </>
   );
 }

@@ -23,7 +23,8 @@ import type { Management } from "../../types/Management";
 import { SOCIAL_OPTIONS } from "../../constants/socials";
 
 export default function TeamMember() {
-  const { token } = theme.useToken(); //lấy màu từ theme antd
+  const { token } = theme.useToken(); // Lấy màu từ theme antd
+  const [msgApi, contextHolder] = message.useMessage();
 
   const [data, setData] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
@@ -72,11 +73,11 @@ export default function TeamMember() {
         setJobList(jobsRes.data);
         setTeamList(teamsRes.data);
       } catch {
-        message.error("Không tải được danh sách công việc hoặc team!");
+        msgApi.error("Không tải được danh sách công việc hoặc team!");
       }
     };
     fetchMeta();
-  }, []);
+  }, [msgApi]);
 
   // Fetch members
   const fetchMembers = useCallback(async () => {
@@ -96,11 +97,11 @@ export default function TeamMember() {
       setData(items);
       setTotal(total);
     } catch {
-      message.error("Lỗi tải danh sách thành viên!");
+      msgApi.error("Lỗi tải danh sách thành viên!");
     } finally {
       setLoading(false);
     }
-  }, [debouncedFilters, page, pageSize]);
+  }, [debouncedFilters, page, pageSize, msgApi]);
 
   useEffect(() => {
     fetchMembers();
@@ -110,11 +111,11 @@ export default function TeamMember() {
   const handleAddMember = async (values: NewMember) => {
     try {
       await axios.post("/members", values);
-      message.success("Thêm thành viên thành công!");
+      msgApi.success("Thêm thành viên thành công!");
       setIsModalOpen(false);
       fetchMembers();
     } catch {
-      message.error("Thêm thất bại");
+      msgApi.error("Thêm thất bại");
     }
   };
 
@@ -122,12 +123,12 @@ export default function TeamMember() {
     if (!editingMember) return;
     try {
       await axios.put(`/members/${editingMember.id}`, values);
-      message.success("Cập nhật thành viên thành công!");
+      msgApi.success("Cập nhật thành viên thành công!");
       setIsModalOpen(false);
       setEditingMember(null);
       fetchMembers();
     } catch {
-      message.error("Cập nhật thất bại");
+      msgApi.error("Cập nhật thất bại");
     }
   };
 
@@ -135,13 +136,13 @@ export default function TeamMember() {
     async (id: string) => {
       try {
         await axios.delete(`/members/${id}`);
-        message.success("Xóa thành viên thành công!");
+        msgApi.success("Xóa thành viên thành công!");
         fetchMembers();
       } catch {
-        message.error("Xóa thất bại");
+        msgApi.error("Xóa thất bại");
       }
     },
-    [fetchMembers]
+    [fetchMembers, msgApi]
   );
 
   // Cấu hình cột
@@ -274,79 +275,82 @@ export default function TeamMember() {
   );
 
   return (
-    <Card
-      title="Quản lý thành viên"
-      variant="borderless"
-      style={{
-        background: token.colorBgContainer,
-        color: token.colorText,
-        boxShadow: token.boxShadow,
-      }}
-    >
-      <Space
-        direction="horizontal"
-        align="center"
+    <>
+      {contextHolder} {/* ✅ cần render contextHolder */}
+      <Card
+        title="Quản lý thành viên"
+        variant="borderless"
         style={{
-          width: "100%",
-          justifyContent: "space-between",
-          marginBottom: 16,
+          background: token.colorBgContainer,
+          color: token.colorText,
+          boxShadow: token.boxShadow,
         }}
       >
-        <MemberFilter
-          filters={filters}
-          jobList={jobList}
-          teamList={teamList}
-          onChange={(newFilters) => {
-            setFilters((prev) => ({ ...prev, ...newFilters }));
-            setPage(1);
+        <Space
+          direction="horizontal"
+          align="center"
+          style={{
+            width: "100%",
+            justifyContent: "space-between",
+            marginBottom: 16,
           }}
-          onReset={() => {
-            setFilters({ search: "", type: "", jobType: "", teamId: "" });
-            setPage(1);
+        >
+          <MemberFilter
+            filters={filters}
+            jobList={jobList}
+            teamList={teamList}
+            onChange={(newFilters) => {
+              setFilters((prev) => ({ ...prev, ...newFilters }));
+              setPage(1);
+            }}
+            onReset={() => {
+              setFilters({ search: "", type: "", jobType: "", teamId: "" });
+              setPage(1);
+            }}
+          />
+
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingMember(null);
+              setIsModalOpen(true);
+            }}
+          >
+            Thêm thành viên
+          </Button>
+        </Space>
+
+        <Table
+          columns={columns}
+          dataSource={data}
+          rowKey="id"
+          loading={loading}
+          scroll={{ x: "max-content", y: 600 }}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            pageSizeOptions,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
           }}
         />
 
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
+        <AddMemberModal
+          open={isModalOpen}
+          onCancel={() => {
+            setIsModalOpen(false);
             setEditingMember(null);
-            setIsModalOpen(true);
           }}
-        >
-          Thêm thành viên
-        </Button>
-      </Space>
-
-      <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="id"
-        loading={loading}
-        scroll={{ x: "max-content", y: 600 }}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          pageSizeOptions,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-        }}
-      />
-
-      <AddMemberModal
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingMember(null);
-        }}
-        onSubmit={editingMember ? handleEditMember : handleAddMember}
-        initialValues={editingMember || undefined}
-        isEdit={!!editingMember}
-      />
-    </Card>
+          onSubmit={editingMember ? handleEditMember : handleAddMember}
+          initialValues={editingMember || undefined}
+          isEdit={!!editingMember}
+        />
+      </Card>
+    </>
   );
 }

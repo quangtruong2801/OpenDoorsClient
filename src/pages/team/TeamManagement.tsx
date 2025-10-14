@@ -16,6 +16,8 @@ import type { Management } from "../../types/Management";
 import useDebounce from "../../hooks/useDebounce";
 
 export default function TeamManagement() {
+  const [msgApi, contextHolder] = message.useMessage();
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [filters, setFilters] = useState({
@@ -58,11 +60,11 @@ export default function TeamManagement() {
       setData(filtered.slice((page - 1) * pageSize, page * pageSize));
     } catch (err) {
       console.error(err);
-      message.error("Lỗi khi tải danh sách team");
+      msgApi.error("Lỗi khi tải danh sách team");
     } finally {
       setLoading(false);
     }
-  }, [debouncedFilters, page, pageSize]);
+  }, [debouncedFilters, page, pageSize, msgApi]);
 
   useEffect(() => {
     fetchData();
@@ -89,17 +91,17 @@ export default function TeamManagement() {
     try {
       if (editingTeam) {
         await axios.put(`/teams/${editingTeam.id}`, values);
-        message.success("Cập nhật team thành công!");
+        msgApi.success("Cập nhật team thành công!");
       } else {
         await axios.post("/teams", values);
-        message.success("Thêm team thành công!");
+        msgApi.success("Thêm team thành công!");
       }
       setIsModalOpen(false);
       setEditingTeam(null);
       fetchData();
     } catch (err) {
       console.error(err);
-      message.error("Lưu team thất bại");
+      msgApi.error("Lưu team thất bại");
     }
   };
 
@@ -111,11 +113,11 @@ export default function TeamManagement() {
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`/teams/${id}`);
-      message.success("Xóa thành công!");
+      msgApi.success("Xóa thành công!");
       fetchData();
     } catch (err) {
       console.error(err);
-      message.error("Có lỗi khi xóa!");
+      msgApi.error("Có lỗi khi xóa!");
     }
   };
 
@@ -148,67 +150,71 @@ export default function TeamManagement() {
   ];
 
   return (
-    <Card title="Quản lý Team" variant="borderless">
-      <Space
-        style={{
-          width: "100%",
-          justifyContent: "space-between",
-          marginBottom: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <Space>
-          <TeamFilter
-            search={filters.search}
-            memberFilter={filters.memberFilter}
-            onSearchChange={(v) => handleFilterChange("search", v)}
-            onMemberFilterChange={(v) => handleFilterChange("memberFilter", v)}
-          />
-          <Button icon={<ReloadOutlined />} onClick={handleResetFilters}>
+    <>
+      {contextHolder} {/* ✅ cần render contextHolder */}
+      <Card title="Quản lý Team" variant="borderless">
+        <Space
+          style={{
+            width: "100%",
+            justifyContent: "space-between",
+            marginBottom: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <Space>
+            <TeamFilter
+              search={filters.search}
+              memberFilter={filters.memberFilter}
+              onSearchChange={(v) => handleFilterChange("search", v)}
+              onMemberFilterChange={(v) =>
+                handleFilterChange("memberFilter", v)
+              }
+            />
+            <Button icon={<ReloadOutlined />} onClick={handleResetFilters} />
+          </Space>
+
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingTeam(null);
+              setIsModalOpen(true);
+            }}
+          >
+            Thêm Team
           </Button>
         </Space>
 
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingTeam(null);
-            setIsModalOpen(true);
+        <Table
+          columns={columns}
+          dataSource={data}
+          rowKey="id"
+          loading={loading}
+          scroll={{ x: "max-content", y: 600 }}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            pageSizeOptions,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
           }}
-        >
-          Thêm Team
-        </Button>
-      </Space>
+        />
 
-      <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="id"
-        loading={loading}
-        scroll={{ x: "max-content", y: 600 }}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          pageSizeOptions,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-        }}
-      />
-
-      <AddTeamModal
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingTeam(null);
-        }}
-        onSubmit={handleSaveTeam}
-        initialValues={editingTeam || undefined}
-        isEdit={!!editingTeam}
-      />
-    </Card>
+        <AddTeamModal
+          open={isModalOpen}
+          onCancel={() => {
+            setIsModalOpen(false);
+            setEditingTeam(null);
+          }}
+          onSubmit={handleSaveTeam}
+          initialValues={editingTeam || undefined}
+          isEdit={!!editingTeam}
+        />
+      </Card>
+    </>
   );
 }

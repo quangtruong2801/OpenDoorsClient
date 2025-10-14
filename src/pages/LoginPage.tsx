@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Button, Input, Form, message, Card } from "antd";
+import { Button, Input, Form, message, Card, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { API_BASE_URL } from "../api/config";
+import logo from "../assets/logoVNTT1.png";
+
+const { Title, Text, Link } = Typography;
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -31,7 +34,8 @@ export default function LoginPage() {
       navigate("/");
     } catch (err: unknown) {
       console.error("Login error:", err);
-      if (err instanceof Error) message.error(err.message || "Đăng nhập thất bại!");
+      if (err instanceof Error)
+        message.error(err.message || "Đăng nhập thất bại!");
       else message.error("Đăng nhập thất bại!");
     } finally {
       setLoading(false);
@@ -39,64 +43,71 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 px-4">
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        background: "linear-gradient(to top, #cce7ff, #e6f0ff)",
+      }}
+    >
       <Card
-        title={
-          <h2 className="text-center text-2xl font-extrabold text-gray-800">
-            Đăng nhập
-          </h2>
-        }
-        className="shadow-2xl rounded-2xl w-full max-w-md transition-transform transform hover:scale-105"
+        style={{ width: "100%", maxWidth: 400, textAlign: "center" }}
         variant="borderless"
+        hoverable
       >
-        <Form
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
+        {/* Logo */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%", 
+            marginBottom: 24,
+          }}
         >
+          <img
+            src={logo}
+            alt="Logo"
+            style={{
+              width: 150, 
+              height: "auto", 
+              maxWidth: "100%", 
+              objectFit: "contain",
+            }}
+          />
+        </div>
+
+        <Title level={2}>Đăng nhập</Title>
+
+        <Form layout="vertical" onFinish={onFinish} autoComplete="off">
           <Form.Item
-            label={<span className="text-gray-700 font-medium">Email</span>}
+            label="Email"
             name="email"
             rules={[{ required: true, message: "Nhập email!" }]}
-            className="mb-6"
           >
-            <Input
-              placeholder="Nhập email của bạn"
-              className="rounded-lg border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-300 px-4"
-            />
+            <Input placeholder="Nhập email của bạn" />
           </Form.Item>
 
           <Form.Item
-            label={<span className="text-gray-700 font-medium">Mật khẩu</span>}
+            label="Mật khẩu"
             name="password"
             rules={[{ required: true, message: "Nhập mật khẩu!" }]}
-            className="mb-6"
           >
-            <Input.Password
-              placeholder="••••••••"
-              className="rounded-lg border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-300 px-4"
-            />
+            <Input.Password placeholder="••••••••" />
           </Form.Item>
 
-          <Form.Item className="mb-4">
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              className="py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-pink-500 hover:to-purple-500 rounded-lg text-white font-semibold shadow-md transition-all duration-300"
-            >
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} block>
               Đăng nhập
             </Button>
           </Form.Item>
         </Form>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Chưa có tài khoản?{" "}
-          <a href="/register" className="text-purple-500 hover:underline">
-            Đăng ký
-          </a>
-        </p>
+        <Text type="secondary" style={{ display: "block", marginTop: 16 }}>
+          Chưa có tài khoản? <Link href="/register">Đăng ký</Link>
+        </Text>
       </Card>
     </div>
   );

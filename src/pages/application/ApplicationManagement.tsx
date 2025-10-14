@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Table, Button, Popconfirm, message, Select, theme, Typography, Space } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import axios from "../../api/config";
-import type { ColumnsType } from "antd/es/table";
+import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import type { Application } from "../../types/Application";
 
 const { Title } = Typography;
@@ -10,10 +10,18 @@ const { Title } = Typography;
 export default function ApplicationManagement() {
   const [data, setData] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    showSizeChanger: true,
+    pageSizeOptions: ["5", "10", "20", "50"],
+  });
 
   const {
     token: { colorBgContainer, colorText, colorBorderSecondary },
-  } = theme.useToken(); // ✅ lấy token từ Ant Design theme
+  } = theme.useToken();
+
+  const [msgApi, contextHolder] = message.useMessage();
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);
@@ -22,11 +30,11 @@ export default function ApplicationManagement() {
       setData(res.data);
     } catch (err) {
       console.error(err);
-      message.error("Không tải được danh sách ứng tuyển!");
+      msgApi.error("Không tải được danh sách ứng tuyển!");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [msgApi]);
 
   useEffect(() => {
     fetchApplications();
@@ -35,21 +43,27 @@ export default function ApplicationManagement() {
   const handleDelete = async (id: string) => {
     try {
       await axios.delete(`/applications/${id}`);
-      message.success("Đã xóa hồ sơ ứng tuyển!");
+      msgApi.success("Đã xóa hồ sơ ứng tuyển!");
       fetchApplications();
-    } catch {
-      message.error("Lỗi khi xóa!");
+    } catch (err) {
+      console.error(err);
+      msgApi.error("Lỗi khi xóa!");
     }
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       await axios.put(`/applications/${id}/status`, { status: newStatus });
-      message.success("Cập nhật trạng thái thành công!");
+      msgApi.success("Cập nhật trạng thái thành công!");
       fetchApplications();
-    } catch {
-      message.error("Cập nhật thất bại!");
+    } catch (err) {
+      console.error(err);
+      msgApi.error("Cập nhật thất bại!");
     }
+  };
+
+  const handleTableChange = (pag: TablePaginationConfig) => {
+    setPagination(pag);
   };
 
   const columns: ColumnsType<Application> = [
@@ -114,13 +128,15 @@ export default function ApplicationManagement() {
   return (
     <div
       style={{
-        background: colorBgContainer, // ✅ tự đổi nền theo theme
+        background: colorBgContainer,
         color: colorText,
         border: `1px solid ${colorBorderSecondary}`,
         borderRadius: 8,
         padding: 16,
       }}
     >
+      {contextHolder}
+
       <Space direction="vertical" style={{ width: "100%" }}>
         <Title level={4} style={{ marginBottom: 0 }}>
           Quản lý hồ sơ ứng tuyển
@@ -130,6 +146,8 @@ export default function ApplicationManagement() {
           dataSource={data}
           rowKey="id"
           loading={loading}
+          pagination={pagination}
+          onChange={handleTableChange}
           scroll={{ x: "max-content" }}
         />
       </Space>
