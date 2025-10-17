@@ -55,7 +55,7 @@ export default function HeaderBar({ collapsed, setCollapsed, isDark, setIsDark }
         />
         <Space size="large" align="center">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium select-none">{isDark ? "Dark" : "Light"} Mode</span>
+            {/* <span className="text-sm font-medium select-none">{isDark ? "Dark" : "Light"} Mode</span> */}
             <Switch checkedChildren="🌙" unCheckedChildren="🌞" checked={isDark} onChange={setIsDark} />
           </div>
           {user ? (
