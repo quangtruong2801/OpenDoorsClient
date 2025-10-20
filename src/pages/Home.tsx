@@ -89,16 +89,34 @@ export default function Home() {
         Danh sách tuyển dụng
       </h1>
 
-      <Row gutter={[24, 24]}>
+      <Row
+        gutter={[24, 24]}
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "stretch",
+        }}
+      >
         {recruitments.map((job) => {
           const isExpired = dayjs(job.deadline).isBefore(dayjs());
-
           return (
-            <Col xs={24} sm={12} md={8} key={job.id}>
+            <Col
+              xs={24}
+              sm={12}
+              md={8}
+              key={job.id}
+              style={{
+                display: "flex",
+                alignItems: "stretch",
+              }}
+            >
               <Card
                 hoverable
                 style={{
-                  height: "100%",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
                   background: token.colorBgContainer,
                   color: token.colorText,
                   borderRadius: token.borderRadiusLG,
@@ -107,34 +125,41 @@ export default function Home() {
                 }}
                 className="hover:scale-105"
               >
-                <div className="flex justify-between items-start mb-3">
-                  <h2
-                    style={{
-                      color: token.colorTextHeading,
-                      fontSize: 18,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {job.title}
-                  </h2>
-                  {isExpired ? (
-                    <Tag color="red">Hết hạn</Tag>
-                  ) : (
-                    <Tag color="green">Đang tuyển</Tag>
-                  )}
-                </div>
+                <div>
+                  <div className="flex justify-between items-start mb-3">
+                    <h2
+                      style={{
+                        color: token.colorTextHeading,
+                        fontSize: 18,
+                        fontWeight: 600,
+                        minHeight: 48,
+                        overflow: "hidden",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                      }}
+                    >
+                      {job.title}
+                    </h2>
+                    {isExpired ? (
+                      <Tag color="red">Hết hạn</Tag>
+                    ) : (
+                      <Tag color="green">Đang tuyển</Tag>
+                    )}
+                  </div>
 
-                <div style={{ fontSize: 14, lineHeight: 1.7 }}>
-                  <p>
-                    <strong>Địa điểm:</strong> {job.location}
-                  </p>
-                  <p>
-                    <strong>Mức lương:</strong> {job.salary}
-                  </p>
-                  <p>
-                    <strong>Hạn nộp:</strong>{" "}
-                    {dayjs(job.deadline).format("DD-MM-YYYY")}
-                  </p>
+                  <div style={{ fontSize: 14, lineHeight: 1.7 }}>
+                    <p>
+                      <strong>Địa điểm:</strong> {job.location}
+                    </p>
+                    <p>
+                      <strong>Mức lương:</strong> {job.salary}
+                    </p>
+                    <p>
+                      <strong>Hạn nộp:</strong>{" "}
+                      {dayjs(job.deadline).format("DD-MM-YYYY")}
+                    </p>
+                  </div>
                 </div>
 
                 <Link to={`/recruitment/${job.id}`}>

@@ -92,7 +92,6 @@ export default function RecruitmentDetail() {
           onClick={() => navigate(-1)}
           style={{ position: "absolute", top: 16, left: 16 }}
         >
-          Quay lại
         </Button>
       </Card>
 

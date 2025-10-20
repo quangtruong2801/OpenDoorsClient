@@ -2,8 +2,9 @@ import { Menu, theme } from "antd";
 import {
   TeamOutlined,
   HomeOutlined,
-  SettingOutlined,
+  // SettingOutlined,
   SolutionOutlined,
+  IdcardOutlined
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import openIcon from "../assets/logoVNTT1.png";
@@ -40,18 +41,18 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
     },
     {
       key: "recruitment",
-      icon: <SolutionOutlined />,
+      icon: <IdcardOutlined />,
       label: "Tuyển dụng",
       children: [
         { key: "/recruitment/management", label: <Link to="/recruitment/management">Quản lý tin tuyển dụng</Link> },
         { key: "/application/management", label: <Link to="/application/management">Quản lý đơn ứng tuyển</Link> },
       ],
     },
-    {
-      key: "/settings",
-      icon: <SettingOutlined />,
-      label: <Link to="/settings">Cài đặt</Link>,
-    },
+    // {
+    //   key: "/settings",
+    //   icon: <SettingOutlined />,
+    //   label: <Link to="/settings">Cài đặt</Link>,
+    // },
   ];
 
   const userItems = [

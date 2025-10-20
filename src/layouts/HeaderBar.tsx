@@ -1,23 +1,48 @@
-import { Layout, Button, Switch, Dropdown, message, theme, Avatar, Space } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import {
+  Layout,
+  Button,
+  Switch,
+  Dropdown,
+  message,
+  theme,
+  Avatar,
+  Space,
+  Grid,
+} from "antd";
+import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  UserOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+} from "@ant-design/icons";
 import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
 
 const { Header } = Layout;
+const { useBreakpoint } = Grid;
 
 interface HeaderBarProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
   isDark: boolean;
   setIsDark: (dark: boolean) => void;
+  onMenuClick?: () => void; // 👈 thêm prop này để mở Drawer trên mobile
 }
 
-export default function HeaderBar({ collapsed, setCollapsed, isDark, setIsDark }: HeaderBarProps) {
+export default function HeaderBar({
+  collapsed,
+  setCollapsed,
+  isDark,
+  setIsDark,
+  onMenuClick,
+}: HeaderBarProps) {
   const { token } = theme.useToken();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
-  // Sử dụng message instance
   const [msgApi, contextHolder] = message.useMessage();
 
   const handleLogout = () => {
@@ -26,7 +51,7 @@ export default function HeaderBar({ collapsed, setCollapsed, isDark, setIsDark }
     navigate("/");
   };
 
-  const items = [
+  const menuItems = [
     {
       key: "1",
       icon: <LogoutOutlined />,
@@ -37,7 +62,7 @@ export default function HeaderBar({ collapsed, setCollapsed, isDark, setIsDark }
 
   return (
     <>
-      {contextHolder} {/* cần render contextHolder trong component */}
+      {contextHolder}
       <Header
         className="flex items-center justify-between px-4 transition-colors duration-300"
         style={{
@@ -47,22 +72,52 @@ export default function HeaderBar({ collapsed, setCollapsed, isDark, setIsDark }
           paddingLeft: 0,
         }}
       >
-        <Button
-          type="text"
-          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={() => setCollapsed(!collapsed)}
-          style={{ color: token.colorText }}
-        />
+        <div className="flex items-center gap-2">
+          {/* Hiển thị icon menu nếu là mobile */}
+          {isMobile ? (
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={onMenuClick}
+              style={{ color: token.colorText }}
+            />
+          ) : (
+            // Hiển thị nút collapse sidebar nếu là desktop
+            <Button
+              type="text"
+              icon={
+                collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />
+              }
+              onClick={() => setCollapsed(!collapsed)}
+              style={{ color: token.colorText }}
+            />
+          )}
+        </div>
+
+        {/* Khu vực bên phải: dark mode + user */}
         <Space size="large" align="center">
-          <div className="flex items-center gap-2">
-            {/* <span className="text-sm font-medium select-none">{isDark ? "Dark" : "Light"} Mode</span> */}
-            <Switch checkedChildren="🌙" unCheckedChildren="🌞" checked={isDark} onChange={setIsDark} />
-          </div>
+          <Switch
+            checkedChildren="🌙"
+            unCheckedChildren="🌞"
+            checked={isDark}
+            onChange={setIsDark}
+          />
+
           {user ? (
-            <Dropdown menu={{ items }} placement="bottomRight" arrow>
-              <Space className="cursor-pointer">
-                <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary, color: token.colorWhite }} />
-                <span className="font-medium">{user.name}</span>
+            <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
+              <Space className="cursor-pointer select-none">
+                <Avatar
+                  size="small"
+                  icon={<UserOutlined />}
+                  style={{
+                    backgroundColor: token.colorPrimary,
+                    color: token.colorWhite,
+                  }}
+                />
+                {/* Ẩn tên người dùng trên mobile để tiết kiệm chỗ */}
+                {!isMobile && (
+                  <span className="font-medium">{user.name}</span>
+                )}
               </Space>
             </Dropdown>
           ) : (
