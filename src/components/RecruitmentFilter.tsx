@@ -1,6 +1,22 @@
+import { useState } from "react";
+import {
+  Form,
+  Input,
+  Select,
+  Button,
+  Drawer,
+  Row,
+  Col,
+  Space,
+  Tooltip,
+  // theme,
+} from "antd";
+import {
+  SearchOutlined,
+  ReloadOutlined,
+  FilterOutlined,
+} from "@ant-design/icons";
 import type { FC } from "react";
-import { Input, Select, Space, Button } from "antd";
-import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 
 type RecruitmentFilterProps = {
   filters: {
@@ -21,46 +37,108 @@ const RecruitmentFilter: FC<RecruitmentFilterProps> = ({
   onChange,
   onReset,
 }) => {
+  // const { token } = theme.useToken();
+  const [open, setOpen] = useState(false);
+
   return (
-    <Space wrap>
-      <Input
-        placeholder="Tìm theo tiêu đề"
-        prefix={<SearchOutlined />}
-        value={filters.search}
-        onChange={(e) => onChange({ search: e.target.value })}
-        style={{ width: 200 }}
-      />
+    <>
+      {/* === Tìm kiếm nhanh và nút lọc / đặt lại === */}
+      <Space wrap>
+        <Input
+          placeholder="Tìm theo tiêu đề"
+          prefix={<SearchOutlined />}
+          value={filters.search}
+          onChange={(e) => onChange({ search: e.target.value })}
+          style={{ width: 200 }}
+          allowClear
+        />
 
-      <Select
-        placeholder="Chọn địa điểm"
-        value={filters.location || undefined}
-        onChange={(v) => onChange({ location: v || "" })}
-        allowClear
-        style={{ width: 160 }}
+        <Tooltip title="Bộ lọc nâng cao">
+          <Button
+            type="default"
+            icon={<FilterOutlined />}
+            onClick={() => setOpen(true)}
+          ></Button>
+        </Tooltip>
+
+        <Tooltip title="Đặt lại bộ lọc">
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={onReset}
+            type="default"
+            // style={{ color: token.colorPrimary }}
+          />
+        </Tooltip>
+      </Space>
+
+      {/* === Drawer bộ lọc nâng cao === */}
+      <Drawer
+        title="Bộ lọc nâng cao"
+        placement="right"
+        width={window.innerWidth < 768 ? "100%" : 400}
+        onClose={() => setOpen(false)}
+        open={open}
+        styles={{
+          body: { paddingBottom: 80 },
+        }}
+        footer={
+          <div style={{ textAlign: "right" }}>
+            <Button onClick={() => setOpen(false)} style={{ marginRight: 8 }}>
+              Đóng
+            </Button>
+            <Button type="primary" onClick={() => setOpen(false)}>
+              Áp dụng
+            </Button>
+          </div>
+        }
       >
-        {locations.map((loc) => (
-          <Select.Option key={loc} value={loc}>
-            {loc}
-          </Select.Option>
-        ))}
-      </Select>
+        <Form layout="vertical">
+          <Row gutter={[12, 12]}>
+            <Col span={24}>
+              <Form.Item label="Địa điểm">
+                <Select
+                  placeholder="Chọn địa điểm"
+                  value={filters.location || undefined}
+                  onChange={(v) => onChange({ location: v || "" })}
+                  allowClear
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.label as string)
+                      ?.toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={locations.map((loc) => ({
+                    label: loc,
+                    value: loc,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
 
-      <Select
-        placeholder="Chọn mức lương"
-        value={filters.salary || undefined}
-        onChange={(v) => onChange({ salary: v || "" })}
-        allowClear
-        style={{ width: 140 }}
-      >
-        {salaries.map((sal) => (
-          <Select.Option key={sal} value={sal}>
-            {sal}
-          </Select.Option>
-        ))}
-      </Select>
-
-      <Button icon={<ReloadOutlined />} onClick={onReset} />
-    </Space>
+            <Col span={24}>
+              <Form.Item label="Mức lương">
+                <Select
+                  placeholder="Chọn mức lương"
+                  value={filters.salary || undefined}
+                  onChange={(v) => onChange({ salary: v || "" })}
+                  allowClear
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.label as string)
+                      ?.toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={salaries.map((sal) => ({
+                    label: sal,
+                    value: sal,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Drawer>
+    </>
   );
 };
 
