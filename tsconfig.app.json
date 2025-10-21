@@ -25,12 +25,9 @@
     "noUncheckedSideEffectImports": true,
 
     /* ALIAS */
-    "baseUrl": ".",
     "paths": {
-      "~/*": ["src/*"]
-    },
-     /* Tắt cảnh báo deprecation */
-    "ignoreDeprecations": "6.0"
+      "~/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }
