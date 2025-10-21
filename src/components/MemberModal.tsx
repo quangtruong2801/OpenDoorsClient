@@ -112,7 +112,7 @@ export default function AddMemberModal({
 
       if (avatarFile) {
         const formData = new FormData();
-        formData.append("file", avatarFile);
+        formData.append("File", avatarFile);
 
         try {
           const res = await axios.post("/upload/upload", formData, {

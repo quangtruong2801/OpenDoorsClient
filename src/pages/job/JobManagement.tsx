@@ -18,10 +18,10 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
 
-import api from "../../api/config";
-import type { Job } from "../../types/Job";
-import AddJobModal from "../../components/JobModal";
-import useDebounce from "../../hooks/useDebounce";
+import api from "~/api/config";
+import type { Job } from "~/types/Job";
+import AddJobModal from "~/components/JobModal";
+import useDebounce from "~/hooks/useDebounce";
 
 export default function JobManagement() {
   const [msgApi, contextHolder] = message.useMessage();

@@ -5,11 +5,11 @@ import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
 
-import api from "../../api/config";
-import type { Recruitment } from "../../types/Recruitment";
-import AddRecruitmentModal from "../../components/RecruitmentModal";
-import useDebounce from "../../hooks/useDebounce";
-import RecruitmentFilter from "../../components/RecruitmentFilter";
+import api from "~/api/config";
+import type { Recruitment } from "~/types/Recruitment";
+import AddRecruitmentModal from "~/components/RecruitmentModal";
+import useDebounce from "~/hooks/useDebounce";
+import RecruitmentFilter from "~/components/RecruitmentFilter";
 
 export default function RecruitmentManagement() {
   const [data, setData] = useState<Recruitment[]>([]);

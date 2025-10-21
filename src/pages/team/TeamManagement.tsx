@@ -9,11 +9,11 @@ import {
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 
-import axios from "../../api/config";
-import AddTeamModal from "../../components/TeamModal";
-import TeamFilter from "../../components/TeamManagementFilter";
-import type { Management } from "../../types/Management";
-import useDebounce from "../../hooks/useDebounce";
+import axios from "~/api/config";
+import AddTeamModal from "~/components/TeamModal";
+import TeamFilter from "~/components/TeamManagementFilter";
+import type { Management } from "~/types/Management";
+import useDebounce from "~/hooks/useDebounce";
 
 export default function TeamManagement() {
   const [msgApi, contextHolder] = message.useMessage();

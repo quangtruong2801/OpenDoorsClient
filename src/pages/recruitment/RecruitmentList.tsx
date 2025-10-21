@@ -3,8 +3,8 @@ import { Card, Row, Col, Spin, Button } from "antd";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
-import type { Recruitment } from "../../types/Recruitment";
-import api from "../../api/config"; // <-- dùng axios instance
+import type { Recruitment } from "~/types/Recruitment";
+import api from "~/api/config"; // <-- dùng axios instance
 
 export default function RecruitmentList() {
   const [recruitments, setRecruitments] = useState<Recruitment[]>([]);

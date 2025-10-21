@@ -12,15 +12,15 @@ import {
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
-import useDebounce from "../../hooks/useDebounce";
+import useDebounce from "~/hooks/useDebounce";
 
-import axios from "../../api/config";
-import AddMemberModal from "../../components/MemberModal";
-import MemberFilter from "../../components/MemberFilter";
+import axios from "~/api/config";
+import AddMemberModal from "~/components/MemberModal";
+import MemberFilter from "~/components/MemberFilter";
 
-import type { Member, NewMember } from "../../types/Member";
-import type { Management } from "../../types/Management";
-import { SOCIAL_OPTIONS } from "../../constants/socials";
+import type { Member, NewMember } from "~/types/Member";
+import type { Management } from "~/types/Management";
+import { SOCIAL_OPTIONS } from "~/constants/socials";
 
 export default function TeamMember() {
   const { token } = theme.useToken(); // Lấy màu từ theme antd

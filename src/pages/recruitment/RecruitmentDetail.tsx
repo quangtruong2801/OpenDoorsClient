@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Spin, Button, Tag, Card, Typography, Row, Col, Space, Divider } from "antd";
 import { MapPin, Calendar, Briefcase, Mail, Phone, DollarSign, ArrowLeft } from "lucide-react";
-import api from "../../api/config";
+import api from "~/api/config";
 import dayjs from "dayjs";
 
 const { Title, Text, Paragraph } = Typography;

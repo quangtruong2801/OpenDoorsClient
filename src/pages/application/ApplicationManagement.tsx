@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { Table, Button, Popconfirm, message, Select, theme, Typography, Space } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
-import axios from "../../api/config";
+import axios from "~/api/config";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
-import type { Application } from "../../types/Application";
+import type { Application } from "~/types/Application";
 
 const { Title } = Typography;
 

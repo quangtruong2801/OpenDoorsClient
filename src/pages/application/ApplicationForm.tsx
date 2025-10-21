@@ -2,7 +2,7 @@ import { Form, Input, Button, Upload, message, Card, Typography, Result } from "
 import { UploadOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "../../api/config";
+import axios from "~/api/config";
 
 const { Title, Text } = Typography;
 
