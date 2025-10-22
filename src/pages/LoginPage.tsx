@@ -1,16 +1,28 @@
 import { useState } from "react";
-import { Button, Input, Form, message, Card, Typography } from "antd";
+import { Button, Input, Form, message, Card, Typography, theme } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { API_BASE_URL } from "../api/config";
 import logo from "../assets/logoVNTT1.png";
 
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { token } = theme.useToken();
+
+  // Tự nhận diện chế độ dark/light dựa vào màu nền trong token
+  const isDarkMode = (() => {
+    const color = token.colorBgBase?.toLowerCase() || "";
+    return color.startsWith("#0") || color.startsWith("#1") || color.startsWith("#2");
+  })();
+
+  
+  const backgroundGradient = isDarkMode
+    ? "linear-gradient(to top, #1b2735, #2c3e50)" 
+    : "linear-gradient(to top, #cce7ff, #e6f0ff)";
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
@@ -50,11 +62,17 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: 16,
-        background: "linear-gradient(to top, #cce7ff, #e6f0ff)",
+        background: backgroundGradient,
+        transition: "background 0.3s ease",
       }}
     >
       <Card
-        style={{ width: "100%", maxWidth: 400, textAlign: "center" }}
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          textAlign: "center",
+          boxShadow: token.boxShadow,
+        }}
         variant="borderless"
         hoverable
       >
@@ -63,7 +81,7 @@ export default function LoginPage() {
           style={{
             display: "flex",
             justifyContent: "center",
-            width: "100%", 
+            width: "100%",
             marginBottom: 24,
           }}
         >
@@ -71,9 +89,9 @@ export default function LoginPage() {
             src={logo}
             alt="Logo"
             style={{
-              width: 150, 
-              height: "auto", 
-              maxWidth: "100%", 
+              width: 150,
+              height: "auto",
+              maxWidth: "100%",
               objectFit: "contain",
             }}
           />
@@ -105,9 +123,7 @@ export default function LoginPage() {
           </Form.Item>
         </Form>
 
-        <Text type="secondary" style={{ display: "block", marginTop: 16 }}>
-          Chưa có tài khoản? <Link href="/register">Đăng ký</Link>
-        </Text>
+        <Text type="secondary" style={{ display: "block", marginTop: 16 }} />
       </Card>
     </div>
   );
