@@ -46,15 +46,15 @@ OpenDoors là một hệ thống quản lý tuyển dụng giúp hiển thị c�
 
 ## Hướng dẫn cài đặt
 
-# 1. Clone repository:
+### 1. Clone repository:
 
--git clone <repository-url>
--cd OpenDoors
+git clone [<repository-url>](https://github.com/quangtruong2801/OpenDoorsClient)
+cd OpenDoors
 
-# 2. Cài đặt dependencies:
+### 2. Cài đặt dependencies:
 
-- npm install
+npm install
 
-# 3. Chạy dự án
+### 3. Chạy dự án
 
--npm run dev
+npm run dev
