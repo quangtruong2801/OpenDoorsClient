@@ -121,6 +121,7 @@ export default function ApplicationForm() {
           tooltip="Chỉ nhận 1 file PDF duy nhất"
         >
           <Upload
+            accept=".pdf"
             beforeUpload={(file) => {
               const isPDF = file.type === "application/pdf";
               if (!isPDF) {
@@ -136,7 +137,7 @@ export default function ApplicationForm() {
           </Upload>
           {file && (
             <Text type="secondary" style={{ marginTop: 8, display: "block" }}>
-              File đã chọn: <strong>{file.name}</strong>
+              {/* File đã chọn: <strong>{file.name}</strong> */}
             </Text>
           )}
         </Form.Item>

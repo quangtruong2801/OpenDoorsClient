@@ -41,7 +41,7 @@ export default function AddMemberModal({
 
   const { token } = theme.useToken();
 
-  // 🔹 Lấy dữ liệu team + job
+  // Lấy dữ liệu team + job
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -58,7 +58,7 @@ export default function AddMemberModal({
     fetchData();
   }, []);
 
-  // 🔹 Khi mở modal
+  // Khi mở modal
   useEffect(() => {
     if (open) {
       if (initialValues) {
@@ -88,7 +88,7 @@ export default function AddMemberModal({
     }
   }, [open, initialValues, form, teams]);
 
-  // 🔹 Xử lý upload ảnh
+  // Xử lý upload ảnh
   const handleAvatarSelect = (file: File) => {
     setAvatarFile(file);
     const reader = new FileReader();
@@ -97,7 +97,7 @@ export default function AddMemberModal({
     return false;
   };
 
-  // 🔹 Submit
+  // Submit
   const handleOk = async () => {
     try {
       const values = await form.validateFields();

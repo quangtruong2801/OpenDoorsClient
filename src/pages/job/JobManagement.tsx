@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Table,
   Button,
@@ -17,6 +17,7 @@ import {
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import api from "~/api/config";
 import type { Job } from "~/types/Job";
@@ -25,9 +26,8 @@ import useDebounce from "~/hooks/useDebounce";
 
 export default function JobManagement() {
   const [msgApi, contextHolder] = message.useMessage();
+  const queryClient = useQueryClient();
 
-  const [data, setData] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
 
@@ -50,72 +50,51 @@ export default function JobManagement() {
     setSearchParams(params);
   }, [search, page, pageSize, setSearchParams]);
 
-  // Fetch dữ liệu
-  const fetchJobs = useCallback(async () => {
-    setLoading(true);
-    try {
+  // Fetch danh sách công việc
+  const { data, isLoading } = useQuery({
+    queryKey: ["jobs", debouncedSearch],
+    queryFn: async () => {
       const res = await api.get<Job[]>("/jobs");
       const result = res.data;
-
-      const filtered = result.filter((j) =>
+      return result.filter((j) =>
         j.jobName.toLowerCase().includes(debouncedSearch.toLowerCase())
       );
+    },
+  });
 
-      setData(filtered);
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Lỗi khi tải danh sách công việc");
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedSearch, msgApi]);
-
-  useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs, page, pageSize]);
-
-  // Thêm công việc
-  const handleAddJob = async (values: Omit<Job, "jobId">) => {
-    try {
-      await api.post("/jobs", values);
+  // Mutation: Thêm công việc
+  const addJob = useMutation({
+    mutationFn: (values: Omit<Job, "jobId">) => api.post("/jobs", values),
+    onSuccess: () => {
       msgApi.success("Thêm công việc thành công!");
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setIsModalOpen(false);
-      fetchJobs();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Thêm công việc thất bại");
-    }
-  };
+    },
+    onError: () => msgApi.error("Thêm công việc thất bại"),
+  });
 
-  // Sửa công việc
-  const handleEditJob = async (values: Partial<Job>) => {
-    if (!editingJob) return;
-    try {
-      await api.put(`/jobs/${editingJob.jobId}`, values);
+  // Mutation: Sửa công việc
+  const editJob = useMutation({
+    mutationFn: (values: Partial<Job>) =>
+      api.put(`/jobs/${editingJob?.jobId}`, values),
+    onSuccess: () => {
       msgApi.success("Cập nhật công việc thành công!");
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setEditingJob(null);
       setIsModalOpen(false);
-      fetchJobs();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Cập nhật công việc thất bại");
-    }
-  };
-
-  // Xóa công việc
-  const handleDelete = useCallback(
-    async (jobId: string) => {
-      try {
-        await api.delete(`/jobs/${jobId}`);
-        msgApi.success("Xóa công việc thành công!");
-        fetchJobs();
-      } catch (err) {
-        console.error(err);
-        msgApi.error("Có lỗi khi xóa!");
-      }
     },
-    [fetchJobs, msgApi]
-  );
+    onError: () => msgApi.error("Cập nhật công việc thất bại"),
+  });
+
+  // Mutation: Xóa công việc
+  const deleteJob = useMutation({
+    mutationFn: (jobId: string) => api.delete(`/jobs/${jobId}`),
+    onSuccess: () => {
+      msgApi.success("Xóa công việc thành công!");
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: () => msgApi.error("Có lỗi khi xóa!"),
+  });
 
   const columns: ColumnsType<Job> = useMemo(
     () => [
@@ -140,7 +119,7 @@ export default function JobManagement() {
             />
             <Popconfirm
               title={`Bạn có chắc muốn xóa công việc "${record.jobName}"?`}
-              onConfirm={() => handleDelete(record.jobId)}
+              onConfirm={() => deleteJob.mutate(record.jobId)}
               okText="Xóa"
               cancelText="Hủy"
             >
@@ -150,7 +129,7 @@ export default function JobManagement() {
         ),
       },
     ],
-    [handleDelete]
+    [deleteJob]
   );
 
   const handleReset = () => {
@@ -161,7 +140,7 @@ export default function JobManagement() {
 
   return (
     <>
-      {contextHolder} {/* ✅ cần render contextHolder */}
+      {contextHolder}
       <Card title="Quản lý công việc">
         <Space
           style={{
@@ -182,9 +161,7 @@ export default function JobManagement() {
               }}
               style={{ width: 260 }}
             />
-            <Button icon={<ReloadOutlined />} onClick={handleReset}>
-
-            </Button>
+            <Button icon={<ReloadOutlined />} onClick={handleReset} />
           </Space>
 
           <Button
@@ -201,14 +178,18 @@ export default function JobManagement() {
 
         <Table
           columns={columns}
-          dataSource={data.slice((page - 1) * pageSize, page * pageSize)}
+          dataSource={
+            data
+              ? data.slice((page - 1) * pageSize, page * pageSize)
+              : []
+          }
           rowKey="jobId"
-          loading={loading}
+          loading={isLoading || addJob.isPending || editJob.isPending}
           scroll={{ x: "max-content", y: 600 }}
           pagination={{
             current: page,
             pageSize,
-            total: data.length,
+            total: data?.length || 0,
             showSizeChanger: true,
             pageSizeOptions,
             onChange: (p, ps) => {
@@ -226,8 +207,8 @@ export default function JobManagement() {
           }}
           onSubmit={(values) =>
             editingJob
-              ? handleEditJob(values as Partial<Job>)
-              : handleAddJob(values as Omit<Job, "jobId">)
+              ? editJob.mutate(values as Partial<Job>)
+              : addJob.mutate(values as Omit<Job, "jobId">)
           }
           initialValues={editingJob || undefined}
         />

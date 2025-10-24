@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Table,
   Space,
@@ -12,45 +12,46 @@ import {
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
-import useDebounce from "~/hooks/useDebounce";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 
+import useDebounce from "~/hooks/useDebounce";
 import axios from "~/api/config";
 import AddMemberModal from "~/components/MemberModal";
 import MemberFilter from "~/components/MemberFilter";
 
 import type { Member, NewMember } from "~/types/Member";
-import type { Management } from "~/types/Management";
 import { SOCIAL_OPTIONS } from "~/constants/socials";
 
+// Định nghĩa kiểu trả về cho API /members/filter
+interface MemberResponse {
+  data: Member[];
+  total: number;
+}
+
 export default function TeamMember() {
-  const { token } = theme.useToken(); // Lấy màu từ theme antd
+  const { token } = theme.useToken();
   const [msgApi, contextHolder] = message.useMessage();
-
-  const [data, setData] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [total, setTotal] = useState(0);
-
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // --- Filters & Pagination ---
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
     type: searchParams.get("type") || "",
     jobType: searchParams.get("jobType") || "",
     teamId: searchParams.get("teamId") || "",
   });
-
   const debouncedFilters = useDebounce(filters, 500);
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [pageSize, setPageSize] = useState(Number(searchParams.get("pageSize")) || 10);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
-
-  const [jobList, setJobList] = useState<{ id: string; jobName: string }[]>([]);
-  const [teamList, setTeamList] = useState<Management[]>([]);
-
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
 
-  // Sync URL
+  // --- Sync URL ---
   useEffect(() => {
     const params: Record<string, string> = {};
     if (filters.search) params.search = filters.search;
@@ -62,27 +63,41 @@ export default function TeamMember() {
     setSearchParams(params);
   }, [filters, page, pageSize, setSearchParams]);
 
-  // Fetch job & team list
-  useEffect(() => {
-    const fetchMeta = async () => {
-      try {
-        const [jobsRes, teamsRes] = await Promise.all([
-          axios.get("/jobs"),
-          axios.get("/teams"),
-        ]);
-        setJobList(jobsRes.data);
-        setTeamList(teamsRes.data);
-      } catch {
-        msgApi.error("Không tải được danh sách công việc hoặc team!");
-      }
-    };
-    fetchMeta();
-  }, [msgApi]);
+  // --- Modal & Editing State ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
 
-  // Fetch members
-  const fetchMembers = useCallback(async () => {
-    setLoading(true);
-    try {
+  // --- Fetch Jobs & Teams ---
+  const { data: metaData } = useQuery({
+    queryKey: ["metaData"],
+    queryFn: async () => {
+      const [jobsRes, teamsRes] = await Promise.all([
+        axios.get("/jobs"),
+        axios.get("/teams"),
+      ]);
+      return { jobs: jobsRes.data, teams: teamsRes.data };
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  // --- Fetch Members ---
+  const {
+    data: membersData,
+    isLoading,
+  } = useQuery<MemberResponse>({
+    queryKey: [
+      "members",
+      {
+        search: debouncedFilters.search,
+        type: debouncedFilters.type,
+        jobType: debouncedFilters.jobType,
+        teamId: debouncedFilters.teamId,
+        page,
+        pageSize,
+      },
+    ],
+    queryFn: async () => {
       const res = await axios.get("/members/filter", {
         params: {
           search: debouncedFilters.search || undefined,
@@ -93,59 +108,49 @@ export default function TeamMember() {
           pageSize,
         },
       });
-      const { data: items, total } = res.data;
-      setData(items);
-      setTotal(total);
-    } catch {
-      msgApi.error("Lỗi tải danh sách thành viên!");
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedFilters, page, pageSize, msgApi]);
+      return res.data as MemberResponse;
+    },
+    placeholderData: keepPreviousData,
+  });
 
-  useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
-
-  // CRUD handlers
-  const handleAddMember = async (values: NewMember) => {
-    try {
-      await axios.post("/members", values);
+  // --- Mutations ---
+  const addMemberMutation = useMutation({
+    mutationFn: (values: NewMember) => axios.post("/members", values),
+    onSuccess: () => {
       msgApi.success("Thêm thành viên thành công!");
       setIsModalOpen(false);
-      fetchMembers();
-    } catch {
-      msgApi.error("Thêm thất bại");
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+    onError: () => msgApi.error("Thêm thất bại"),
+  });
 
-  const handleEditMember = async (values: NewMember) => {
-    if (!editingMember) return;
-    try {
-      await axios.put(`/members/${editingMember.id}`, values);
+  const editMemberMutation = useMutation({
+    mutationFn: (values: NewMember) =>
+      axios.put(`/members/${editingMember?.id}`, values),
+    onSuccess: () => {
       msgApi.success("Cập nhật thành viên thành công!");
       setIsModalOpen(false);
       setEditingMember(null);
-      fetchMembers();
-    } catch {
-      msgApi.error("Cập nhật thất bại");
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+    onError: () => msgApi.error("Cập nhật thất bại"),
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: (id: string) => axios.delete(`/members/${id}`),
+    onSuccess: () => {
+      msgApi.success("Xóa thành viên thành công!");
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+    onError: () => msgApi.error("Xóa thất bại"),
+  });
 
   const handleDelete = useCallback(
-    async (id: string) => {
-      try {
-        await axios.delete(`/members/${id}`);
-        msgApi.success("Xóa thành viên thành công!");
-        fetchMembers();
-      } catch {
-        msgApi.error("Xóa thất bại");
-      }
-    },
-    [fetchMembers, msgApi]
+    (id: string) => deleteMemberMutation.mutate(id),
+    [deleteMemberMutation]
   );
 
-  // Cấu hình cột
+  // --- Columns ---
   const columns: ColumnsType<Member> = useMemo(
     () => [
       {
@@ -276,7 +281,7 @@ export default function TeamMember() {
 
   return (
     <>
-      {contextHolder} {/* ✅ cần render contextHolder */}
+      {contextHolder}
       <Card
         title="Quản lý thành viên"
         variant="borderless"
@@ -297,8 +302,8 @@ export default function TeamMember() {
         >
           <MemberFilter
             filters={filters}
-            jobList={jobList}
-            teamList={teamList}
+            jobList={metaData?.jobs || []}
+            teamList={metaData?.teams || []}
             onChange={(newFilters) => {
               setFilters((prev) => ({ ...prev, ...newFilters }));
               setPage(1);
@@ -323,14 +328,14 @@ export default function TeamMember() {
 
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={membersData?.data || []}
           rowKey="id"
-          loading={loading}
+          loading={isLoading}
           scroll={{ x: "max-content", y: 600 }}
           pagination={{
             current: page,
             pageSize,
-            total,
+            total: membersData?.total || 0,
             showSizeChanger: true,
             pageSizeOptions,
             onChange: (p, ps) => {
@@ -346,7 +351,11 @@ export default function TeamMember() {
             setIsModalOpen(false);
             setEditingMember(null);
           }}
-          onSubmit={editingMember ? handleEditMember : handleAddMember}
+          onSubmit={
+            editingMember
+              ? (values) => editMemberMutation.mutate(values)
+              : (values) => addMemberMutation.mutate(values)
+          }
           initialValues={editingMember || undefined}
           isEdit={!!editingMember}
         />
