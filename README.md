@@ -48,7 +48,7 @@ OpenDoors là một hệ thống quản lý tuyển dụng giúp hiển thị c�
 
 ### 1. Clone repository:
 
-git clone [<repository-url>](https://github.com/quangtruong2801/OpenDoorsClient)
+git clone [https://github.com/quangtruong2801/OpenDoorsClient](https://github.com/quangtruong2801/OpenDoorsClient)
 cd OpenDoors
 
 ### 2. Cài đặt dependencies:
