@@ -1,13 +1,26 @@
-import { useState, useEffect, useCallback } from "react";
-import { Table, Button, message, Space, Popconfirm, Card } from "antd";
+import {
+  Table,
+  Button,
+  message,
+  Space,
+  Popconfirm,
+  Card,
+} from "antd";
 import {
   EditOutlined,
   PlusOutlined,
   DeleteOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 
 import axios from "~/api/config";
 import AddTeamModal from "~/components/TeamModal";
@@ -17,59 +30,90 @@ import useDebounce from "~/hooks/useDebounce";
 
 export default function TeamManagement() {
   const [msgApi, contextHolder] = message.useMessage();
-
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Bộ lọc
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
-    memberFilter: searchParams.get("memberFilter") || "all",
+    memberFilter: searchParams.get("memberFilter") || "",
   });
+  const debouncedFilters = useDebounce(filters, 400);
 
-  const debouncedFilters = useDebounce(filters, 500);
-
-  const [data, setData] = useState<Management[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Phân trang
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [total, setTotal] = useState(0);
+  const pageSizeOptions = ["5", "10", "20", "50", "100"];
+
+  // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Management | null>(null);
 
-  const pageSizeOptions = ["5", "10", "20", "50", "100"];
+  // FETCH DATA
+  const fetchTeams = async () => {
+    const res = await axios.get<Management[]>("/teams");
+    let result = res.data;
 
-  // Fetch danh sách team
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get<Management[]>("/teams");
-      const result = res.data;
+    // Lọc theo tên
+    result = result.filter((team) =>
+      team.teamName.toLowerCase().includes(debouncedFilters.search.toLowerCase())
+    );
 
-      let filtered = result.filter((d) =>
-        d.teamName.toLowerCase().includes(debouncedFilters.search.toLowerCase())
-      );
+    // Lọc theo số lượng thành viên
+    if (debouncedFilters.memberFilter === "lt5")
+      result = result.filter((t) => t.members < 5);
+    if (debouncedFilters.memberFilter === "5to10")
+      result = result.filter((t) => t.members >= 5 && t.members <= 10);
+    if (debouncedFilters.memberFilter === "gt10")
+      result = result.filter((t) => t.members > 10);
 
-      filtered = filtered.filter((d) => {
-        if (debouncedFilters.memberFilter === "lt5") return d.members < 5;
-        if (debouncedFilters.memberFilter === "5to10")
-          return d.members >= 5 && d.members <= 10;
-        if (debouncedFilters.memberFilter === "gt10") return d.members > 10;
-        return true;
-      });
+    const total = result.length;
+    const data = result.slice((page - 1) * pageSize, page * pageSize);
 
-      setTotal(filtered.length);
-      setData(filtered.slice((page - 1) * pageSize, page * pageSize));
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Lỗi khi tải danh sách team");
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedFilters, page, pageSize, msgApi]);
+    return { data, total };
+  };
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const {
+    data: teamData = { data: [], total: 0 },
+    isLoading,
+  } = useQuery({
+    queryKey: ["teams", debouncedFilters, page, pageSize],
+    queryFn: fetchTeams,
+    placeholderData: keepPreviousData,
+  });
 
+  // MUTATIONS
+
+  const addMutation = useMutation({
+    mutationFn: (values: { teamName: string }) =>
+      axios.post("/teams", values),
+    onSuccess: () => {
+      msgApi.success("Thêm team thành công!");
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+    },
+    onError: () => msgApi.error("Lỗi khi thêm team!"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (values: { id: string; teamName: string }) =>
+      axios.put(`/teams/${values.id}`, { teamName: values.teamName }),
+    onSuccess: () => {
+      msgApi.success("Cập nhật team thành công!");
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+    },
+    onError: () => msgApi.error("Lỗi khi cập nhật team!"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => axios.delete(`/teams/${id}`),
+    onSuccess: () => {
+      msgApi.success("Xóa thành công!");
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+    },
+    onError: () => msgApi.error("Có lỗi khi xóa!"),
+  });
+
+  // HANDLERS
   const handleFilterChange = (
     key: "search" | "memberFilter",
     value: string
@@ -81,28 +125,20 @@ export default function TeamManagement() {
   };
 
   const handleResetFilters = () => {
-    const reset = { search: "", memberFilter: "all" };
+    const reset = { search: "", memberFilter: "" };
     setFilters(reset);
     setSearchParams({});
     setPage(1);
   };
 
   const handleSaveTeam = async (values: { teamName: string }) => {
-    try {
-      if (editingTeam) {
-        await axios.put(`/teams/${editingTeam.id}`, values);
-        msgApi.success("Cập nhật team thành công!");
-      } else {
-        await axios.post("/teams", values);
-        msgApi.success("Thêm team thành công!");
-      }
-      setIsModalOpen(false);
-      setEditingTeam(null);
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Lưu team thất bại");
+    if (editingTeam) {
+      await updateMutation.mutateAsync({ id: editingTeam.id, ...values });
+    } else {
+      await addMutation.mutateAsync(values);
     }
+    setIsModalOpen(false);
+    setEditingTeam(null);
   };
 
   const handleEdit = (record: Management) => {
@@ -110,20 +146,20 @@ export default function TeamManagement() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await axios.delete(`/teams/${id}`);
-      msgApi.success("Xóa thành công!");
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Có lỗi khi xóa!");
-    }
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
 
+  // COLUMNS
   const columns: ColumnsType<Management> = [
     { title: "Tên Team", dataIndex: "teamName", key: "teamName", width: 250 },
-    { title: "Số thành viên", dataIndex: "members", key: "members", width: 150 },
+    {
+      title: "Số thành viên",
+      dataIndex: "members",
+      key: "members",
+      width: 150,
+      align: "center",
+    },
     {
       title: "Thao tác",
       key: "action",
@@ -149,9 +185,10 @@ export default function TeamManagement() {
     },
   ];
 
+  // RENDER
   return (
     <>
-      {contextHolder} {/* ✅ cần render contextHolder */}
+      {contextHolder}
       <Card title="Quản lý Team" variant="borderless">
         <Space
           style={{
@@ -187,14 +224,14 @@ export default function TeamManagement() {
 
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={teamData.data}
           rowKey="id"
-          loading={loading}
+          loading={isLoading}
           scroll={{ x: "max-content", y: 600 }}
           pagination={{
             current: page,
             pageSize,
-            total,
+            total: teamData.total,
             showSizeChanger: true,
             pageSizeOptions,
             onChange: (p, ps) => {

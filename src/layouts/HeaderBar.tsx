@@ -27,7 +27,7 @@ interface HeaderBarProps {
   setCollapsed: (collapsed: boolean) => void;
   isDark: boolean;
   setIsDark: (dark: boolean) => void;
-  onMenuClick?: () => void; // 👈 thêm prop này để mở Drawer trên mobile
+  onMenuClick?: () => void; //prop mở Drawer trên mobile
 }
 
 export default function HeaderBar({
@@ -94,7 +94,7 @@ export default function HeaderBar({
           )}
         </div>
 
-        {/* Khu vực bên phải: dark mode + user */}
+        {/* bên phải: dark mode + user */}
         <Space size="large" align="center">
           <Switch
             checkedChildren="🌙"

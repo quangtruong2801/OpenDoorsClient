@@ -29,9 +29,9 @@ export default function AddRecruitmentModal({
           deadline: initialValues.deadline
             ? dayjs(initialValues.deadline) // nhận từ BE là Date, convert sang dayjs cho DatePicker
             : null,
-          description: initialValues.description?.join("\n"), 
-          requirements: initialValues.requirements?.join("\n"), 
-          benefits: initialValues.benefits?.join("\n"), 
+          description: initialValues.description?.join("\n"),
+          requirements: initialValues.requirements?.join("\n"),
+          benefits: initialValues.benefits?.join("\n"),
         });
       } else {
         form.resetFields();
@@ -48,14 +48,23 @@ export default function AddRecruitmentModal({
         ...values,
         deadline: values.deadline ? values.deadline.toDate() : null, // DatePicker -> Date object
         description: values.description
-        ? values.description.split("\n").map((line: string) => line.trim()).filter(Boolean)
-        : [],
-      requirements: values.requirements
-        ? values.requirements.split("\n").map((line: string) => line.trim()).filter(Boolean)
-        : [],
-      benefits: values.benefits
-        ? values.benefits.split("\n").map((line: string) => line.trim()).filter(Boolean)
-        : [],
+          ? values.description
+              .split("\n")
+              .map((line: string) => line.trim())
+              .filter(Boolean)
+          : [],
+        requirements: values.requirements
+          ? values.requirements
+              .split("\n")
+              .map((line: string) => line.trim())
+              .filter(Boolean)
+          : [],
+        benefits: values.benefits
+          ? values.benefits
+              .split("\n")
+              .map((line: string) => line.trim())
+              .filter(Boolean)
+          : [],
       };
 
       onSubmit(payload);
@@ -78,7 +87,13 @@ export default function AddRecruitmentModal({
       width={800}
       maskClosable={false}
     >
-      <Form form={form} layout="vertical">
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          companyName: "Công ty cổ phần Công Nghệ và Truyền Thông Việt Nam (VNTT)",
+        }}
+      >
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
@@ -134,7 +149,9 @@ export default function AddRecruitmentModal({
             <Form.Item
               name="description"
               label="Mô tả công việc"
-              rules={[{ required: true, message: "Vui lòng nhập mô tả công việc" }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập mô tả công việc" },
+              ]}
             >
               <Input.TextArea rows={4} />
             </Form.Item>

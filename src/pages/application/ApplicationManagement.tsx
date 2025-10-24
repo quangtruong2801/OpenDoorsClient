@@ -1,6 +1,16 @@
-import { useEffect, useState, useCallback } from "react";
-import { Table, Button, Popconfirm, message, Select, theme, Typography, Space } from "antd";
+import { useState } from "react";
+import {
+  Table,
+  Button,
+  Popconfirm,
+  message,
+  Select,
+  theme,
+  Typography,
+  Space,
+} from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "~/api/config";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import type { Application } from "~/types/Application";
@@ -8,8 +18,6 @@ import type { Application } from "~/types/Application";
 const { Title } = Typography;
 
 export default function ApplicationManagement() {
-  const [data, setData] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<TablePaginationConfig>({
     current: 1,
     pageSize: 10,
@@ -22,45 +30,42 @@ export default function ApplicationManagement() {
   } = theme.useToken();
 
   const [msgApi, contextHolder] = message.useMessage();
+  const queryClient = useQueryClient();
 
-  const fetchApplications = useCallback(async () => {
-    setLoading(true);
-    try {
+  // Fetch dữ liệu bằng React Query
+  const { data, isPending } = useQuery<Application[], Error>({
+    queryKey: ["applications"],
+    queryFn: async () => {
       const res = await axios.get("/applications");
-      setData(res.data);
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Không tải được danh sách ứng tuyển!");
-    } finally {
-      setLoading(false);
-    }
-  }, [msgApi]);
+      return res.data;
+    },
+    placeholderData: (prev) => prev,
+    staleTime: 1000 * 30,
+  });
 
-  useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
-
-  const handleDelete = async (id: string) => {
-    try {
+  // Mutation: xóa hồ sơ
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       await axios.delete(`/applications/${id}`);
+    },
+    onSuccess: () => {
       msgApi.success("Đã xóa hồ sơ ứng tuyển!");
-      fetchApplications();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Lỗi khi xóa!");
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+    },
+    onError: () => msgApi.error("Lỗi khi xóa!"),
+  });
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      await axios.put(`/applications/${id}/status`, { status: newStatus });
+  // Mutation: đổi trạng thái
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await axios.put(`/applications/${id}/status`, { status });
+    },
+    onSuccess: () => {
       msgApi.success("Cập nhật trạng thái thành công!");
-      fetchApplications();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Cập nhật thất bại!");
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+    },
+    onError: () => msgApi.error("Cập nhật thất bại!"),
+  });
 
   const handleTableChange = (pag: TablePaginationConfig) => {
     setPagination(pag);
@@ -90,7 +95,7 @@ export default function ApplicationManagement() {
       render: (_, record) => (
         <Select
           value={record.status}
-          onChange={(val) => handleStatusChange(record.id, val)}
+          onChange={(val) => statusMutation.mutate({ id: record.id, status: val })}
           style={{ width: 120 }}
           options={[
             { value: "pending", label: "Chờ duyệt" },
@@ -117,7 +122,7 @@ export default function ApplicationManagement() {
           title="Xóa hồ sơ này?"
           okText="Xóa"
           cancelText="Hủy"
-          onConfirm={() => handleDelete(record.id)}
+          onConfirm={() => deleteMutation.mutate(record.id)}
         >
           <Button icon={<DeleteOutlined />} danger />
         </Popconfirm>
@@ -141,11 +146,12 @@ export default function ApplicationManagement() {
         <Title level={4} style={{ marginBottom: 0 }}>
           Quản lý hồ sơ ứng tuyển
         </Title>
+
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={data || []}
           rowKey="id"
-          loading={loading}
+          loading={isPending}
           pagination={pagination}
           onChange={handleTableChange}
           scroll={{ x: "max-content" }}

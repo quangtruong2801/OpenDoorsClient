@@ -1,9 +1,22 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Table, Button, Space, Popconfirm, Card, theme, message } from "antd";
-import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { useState, useEffect, useMemo } from "react";
+import {
+  Table,
+  Button,
+  Space,
+  Popconfirm,
+  Card,
+  theme,
+  message,
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import api from "~/api/config";
 import type { Recruitment } from "~/types/Recruitment";
@@ -12,12 +25,9 @@ import useDebounce from "~/hooks/useDebounce";
 import RecruitmentFilter from "~/components/RecruitmentFilter";
 
 export default function RecruitmentManagement() {
-  const [data, setData] = useState<Recruitment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRecruitment, setEditingRecruitment] = useState<Recruitment | null>(null);
-
+  const [editingRecruitment, setEditingRecruitment] =
+    useState<Recruitment | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
@@ -30,11 +40,10 @@ export default function RecruitmentManagement() {
   const debouncedSearch = useDebounce(filters.search, 500);
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
   const { token } = theme.useToken();
-
-  // Message API
   const [msgApi, contextHolder] = message.useMessage();
+  const queryClient = useQueryClient();
 
-  // Update URL params when filters change
+  // Cập nhật URL khi filter thay đổi
   useEffect(() => {
     const params: Record<string, string> = {};
     if (filters.search) params.search = filters.search;
@@ -45,10 +54,13 @@ export default function RecruitmentManagement() {
     setSearchParams(params);
   }, [filters, setSearchParams]);
 
-  // Fetch data from API
-  const fetchRecruitments = useCallback(async () => {
-    setLoading(true);
-    try {
+  // ✅ Fetch list with TanStack Query v5
+  const {
+    data = { items: [], total: 0 },
+    isPending,
+  } = useQuery<{ items: Recruitment[]; total: number }, Error>({
+    queryKey: ["recruitments", { ...filters, search: debouncedSearch }],
+    queryFn: async () => {
       const res = await api.get("/recruitments/filter", {
         params: {
           keyword: debouncedSearch || undefined,
@@ -58,91 +70,84 @@ export default function RecruitmentManagement() {
           pageSize: filters.pageSize,
         },
       });
-
       const { data: items, total } = res.data;
-
-      // Convert deadline to Date object
-      setData(
-        items.map((r: Recruitment) => ({
+      return {
+        items: items.map((r: Recruitment) => ({
           ...r,
           deadline: r.deadline ? new Date(r.deadline) : null,
-        }))
-      );
-      setTotal(total);
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Lỗi tải danh sách tuyển dụng");
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedSearch, filters.location, filters.salary, filters.page, filters.pageSize, msgApi]);
+        })),
+        total,
+      };
+    },
+    placeholderData: (prev) => prev, // ✅ Thay thế cho keepPreviousData
+    staleTime: 1000 * 30,
+    retry: 1,
+  });
 
-  useEffect(() => {
-    fetchRecruitments();
-  }, [fetchRecruitments]);
-
-  // Add recruitment
-  const handleAddRecruitment = async (values: Omit<Recruitment, "id">) => {
-    try {
+  // ✅ Add recruitment
+  const addMutation = useMutation({
+    mutationFn: async (values: Omit<Recruitment, "id">) => {
       await api.post("/recruitments", {
         ...values,
         deadline: values.deadline?.toISOString() || null,
       });
+    },
+    onSuccess: () => {
       msgApi.success("Thêm tin tuyển dụng thành công!");
+      queryClient.invalidateQueries({ queryKey: ["recruitments"] });
       setIsModalOpen(false);
-      fetchRecruitments();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Thêm thất bại");
-    }
-  };
+    },
+    onError: () => msgApi.error("Thêm thất bại"),
+  });
 
-  // Edit recruitment
-  const handleEditRecruitment = async (values: Omit<Recruitment, "id">) => {
-    if (!editingRecruitment) return;
-    try {
+  // ✅ Edit recruitment
+  const editMutation = useMutation({
+    mutationFn: async (values: Omit<Recruitment, "id">) => {
+      if (!editingRecruitment) return;
       await api.put(`/recruitments/${editingRecruitment.id}`, {
         ...values,
         deadline: values.deadline?.toISOString() || null,
       });
+    },
+    onSuccess: () => {
       msgApi.success("Cập nhật tin thành công!");
+      queryClient.invalidateQueries({ queryKey: ["recruitments"] });
       setEditingRecruitment(null);
       setIsModalOpen(false);
-      fetchRecruitments();
-    } catch (err) {
-      console.error(err);
-      msgApi.error("Cập nhật thất bại");
-    }
-  };
-
-  // Delete recruitment
-  const handleDelete = useCallback(
-    async (id: string) => {
-      try {
-        await api.delete(`/recruitments/${id}`);
-        msgApi.success("Xóa thành công!");
-        fetchRecruitments();
-      } catch (err) {
-        console.error(err);
-        msgApi.error("Xóa thất bại");
-      }
     },
-    [fetchRecruitments, msgApi]
-  );
+    onError: () => msgApi.error("Cập nhật thất bại"),
+  });
 
-  // Table columns
+  // ✅ Delete recruitment
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/recruitments/${id}`);
+    },
+    onSuccess: () => {
+      msgApi.success("Xóa thành công!");
+      queryClient.invalidateQueries({ queryKey: ["recruitments"] });
+    },
+    onError: () => msgApi.error("Xóa thất bại"),
+  });
+
   const columns: ColumnsType<Recruitment> = useMemo(
     () => [
       { title: "Tiêu đề", dataIndex: "title", key: "title", width: 180 },
       { title: "Mức lương", dataIndex: "salary", key: "salary", width: 120 },
       { title: "Địa điểm", dataIndex: "location", key: "location", width: 150 },
-      { title: "Kinh nghiệm", dataIndex: "experience", key: "experience", width: 120 },
+      {
+        title: "Kinh nghiệm",
+        dataIndex: "experience",
+        key: "experience",
+        width: 120,
+      },
       {
         title: "Hạn nộp",
         dataIndex: "deadline",
         key: "deadline",
         width: 120,
-        render: (date: Date) => (date ? dayjs(date).format("DD/MM/YYYY") : ""),
+        render: (date: Date) =>
+          date ? dayjs(date).format("DD/MM/YYYY") : "",
       },
       {
         title: "Mô tả công việc",
@@ -204,7 +209,7 @@ export default function RecruitmentManagement() {
             <Popconfirm
               title="Xác nhận xóa"
               description={`Bạn có chắc muốn xóa tin tuyển dụng "${record.title}"?`}
-              onConfirm={() => handleDelete(record.id)}
+              onConfirm={() => deleteMutation.mutate(record.id)}
               okText="Xóa"
               cancelText="Hủy"
               okButtonProps={{ danger: true }}
@@ -215,7 +220,7 @@ export default function RecruitmentManagement() {
         ),
       },
     ],
-    [handleDelete, token.colorPrimary]
+    [deleteMutation, token.colorPrimary]
   );
 
   return (
@@ -227,10 +232,8 @@ export default function RecruitmentManagement() {
         boxShadow: token.boxShadowTertiary,
       }}
     >
-      {/* Render message context */}
       {contextHolder}
 
-      {/* Filter + Add Button */}
       <div
         style={{
           marginBottom: token.margin,
@@ -244,11 +247,19 @@ export default function RecruitmentManagement() {
       >
         <RecruitmentFilter
           filters={filters}
-          locations={Array.from(new Set(data.map((d) => d.location)))}
-          salaries={Array.from(new Set(data.map((d) => d.salary)))}
-          onChange={(newFilters) => setFilters({ ...filters, ...newFilters, page: 1 })}
+          locations={Array.from(new Set(data.items.map((d) => d.location)))}
+          salaries={Array.from(new Set(data.items.map((d) => d.salary)))}
+          onChange={(newFilters) =>
+            setFilters({ ...filters, ...newFilters, page: 1 })
+          }
           onReset={() =>
-            setFilters({ search: "", location: "", salary: "", page: 1, pageSize: filters.pageSize })
+            setFilters({
+              search: "",
+              location: "",
+              salary: "",
+              page: 1,
+              pageSize: filters.pageSize,
+            })
           }
         />
 
@@ -266,14 +277,14 @@ export default function RecruitmentManagement() {
 
       <Table
         columns={columns}
-        dataSource={data}
+        dataSource={data.items}
         rowKey="id"
-        loading={loading}
+        loading={isPending}
         scroll={{ x: "max-content", y: 600 }}
         pagination={{
           current: filters.page,
           pageSize: filters.pageSize,
-          total,
+          total: data.total,
           showSizeChanger: true,
           pageSizeOptions,
           onChange: (p, ps) => setFilters({ ...filters, page: p, pageSize: ps }),
@@ -286,7 +297,11 @@ export default function RecruitmentManagement() {
           setIsModalOpen(false);
           setEditingRecruitment(null);
         }}
-        onSubmit={editingRecruitment ? handleEditRecruitment : handleAddRecruitment}
+        onSubmit={(values) =>
+          editingRecruitment
+            ? editMutation.mutate(values)
+            : addMutation.mutate(values)
+        }
         initialValues={editingRecruitment || undefined}
         isEdit={!!editingRecruitment}
       />
