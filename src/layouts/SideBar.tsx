@@ -1,21 +1,26 @@
+
 import { Menu, theme } from "antd";
 import {
   TeamOutlined,
   HomeOutlined,
-  // SettingOutlined,
   SolutionOutlined,
-  IdcardOutlined
+  IdcardOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import openIcon from "../assets/logoVNTT1.png";
 import closeIcon from "../assets/logoVNTT2.png";
 import { useAuth } from "../context/useAuth";
 
-export default function SideBar({ collapsed }: { collapsed: boolean }) {
+interface SideBarProps {
+  collapsed: boolean;
+}
+
+export default function SideBar({ collapsed }: SideBarProps) {
   const location = useLocation();
   const { user } = useAuth();
-  const { token } = theme.useToken(); // Lấy màu theme hiện tại
+  const { token } = theme.useToken();
 
+  // --- Menu items ---
   const adminItems = [
     {
       key: "/",
@@ -44,29 +49,38 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
       icon: <IdcardOutlined />,
       label: "Tuyển dụng",
       children: [
+        { key: "/recruitments", label: <Link to="/recruitments">Danh sách tuyển dụng</Link> },
         { key: "/recruitment/management", label: <Link to="/recruitment/management">Quản lý tin tuyển dụng</Link> },
         { key: "/application/management", label: <Link to="/application/management">Quản lý đơn ứng tuyển</Link> },
       ],
     },
-    // {
-    //   key: "/settings",
-    //   icon: <SettingOutlined />,
-    //   label: <Link to="/settings">Cài đặt</Link>,
-    // },
   ];
 
   const userItems = [
-    { key: "/", icon: <HomeOutlined />, label: <Link to="/">Trang chủ</Link> },
+    {
+      key: "/recruitments",
+      icon: <IdcardOutlined />,
+      label: <Link to="/recruitments">Tuyển dụng</Link>,
+    },
   ];
 
-  const items = user?.role === "admin" ? adminItems : userItems;
+  const guestItems = [
+    {
+      key: "/recruitments",
+      icon: <IdcardOutlined />,
+      label: <Link to="/recruitments">Tuyển dụng</Link>,
+    },
+  ];
+
+  // Chọn menu theo role
+  const items = user?.role === "admin" ? adminItems : user ? userItems : guestItems;
 
   return (
     <div
       className="h-screen transition-colors duration-300"
       style={{
-        backgroundColor: token.colorBgContainer, // Nền đồng bộ theo theme
-        color: token.colorText, // Chữ đổi màu tự động
+        backgroundColor: token.colorBgContainer,
+        color: token.colorText,
       }}
     >
       <div className="w-full h-12 mb-4 flex items-center justify-center">
@@ -82,8 +96,8 @@ export default function SideBar({ collapsed }: { collapsed: boolean }) {
         selectedKeys={[location.pathname]}
         items={items}
         style={{
-          backgroundColor: "transparent", // Giữ nền khớp với div cha
-          borderInlineEnd: "none", // Loại bỏ viền dọc
+          backgroundColor: "transparent",
+          borderInlineEnd: "none",
         }}
       />
     </div>

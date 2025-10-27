@@ -16,12 +16,12 @@ export default function PrivateRouter({ children, adminOnly = false }: PrivateRo
 
   // Nếu chưa đăng nhập
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/recruitments" replace />;
   }
 
   // Nếu yêu cầu admin mà user không phải admin
   if (adminOnly && user.role !== "admin") {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/recruitments" replace />;
   }
 
   return children;

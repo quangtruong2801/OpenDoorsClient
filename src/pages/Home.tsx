@@ -1,222 +1,199 @@
-import { useEffect, useState, useCallback } from "react";
-import { Card, Row, Col, Spin, Button, Tag, theme } from "antd";
-import { Link } from "react-router-dom";
-import { DownOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
-import api from "../api/config";
-import type { Recruitment } from "../types/Recruitment";
-
-interface RecruitmentResponse {
-  data: Recruitment[];
-  total: number;
-}
+import { useEffect, useState, useContext, useCallback } from "react";
+import { Card, Row, Col, Spin, theme, message, Tag } from "antd";
+import axios from "axios";
+import api from "~/api/config";
+import type { Member } from "~/types/Member";
+import AuthContext from "~/context/AuthContext";
 
 export default function Home() {
-  const [recruitments, setRecruitments] = useState<Recruitment[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [currentMember, setCurrentMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const { token } = theme.useToken(); // Lấy token từ ConfigProvider
+  const { token } = theme.useToken();
+  const [msgApi, contextHolder] = message.useMessage();
 
-  const limit = 6;
+  const auth = useContext(AuthContext);
+  const user = auth?.user;
 
-  const fetchRecruitments = useCallback(async (pageNumber: number) => {
-    setLoading(true);
+  // Hàm gọi API được memo hóa để tránh gọi lại không cần thiết
+  const fetchMemberData = useCallback(async (userId: string, signal: AbortSignal) => {
     try {
-      const res = await api.get<RecruitmentResponse>("/recruitments/filter", {
-        params: { page: pageNumber, pageSize: limit },
-      });
+      setLoading(true);
+      // Lấy thông tin cá nhân (Member)
+      const meRes = await api.get<Member>(`/members/${userId}`, { signal });
+      const me = meRes.data;
+      setCurrentMember(me);
 
-      const newItems: Recruitment[] = res.data.data.map((r: Recruitment) => ({
-        ...r,
-        deadline: new Date(r.deadline),
-      }));
-
-      setRecruitments((prev) => {
-        const ids = new Set(prev.map((r) => r.id));
-        const filtered = newItems.filter((r) => !ids.has(r.id));
-        return [...prev, ...filtered];
-      });
-
-      if (pageNumber * limit >= res.data.total) setHasMore(false);
-    } catch (err) {
-      console.error("Lỗi tải danh sách tuyển dụng:", err);
+      // Nếu có teamId => lấy danh sách thành viên trong team
+      if (me.teamId) {
+        const teamRes = await api.get<{ data: Member[] }>("/members/filter", {
+          params: { teamId: me.teamId },
+          signal,
+        });
+        setMembers(teamRes.data.data);
+      } else {
+        setMembers([]);
+      }
+    } catch (err: unknown) {
+      if (axios.isCancel(err)) return; // bị hủy => không xử lý
+      console.error("Lỗi tải dữ liệu:", err);
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          msgApi.error("Bạn chưa đăng nhập hoặc token đã hết hạn.");
+        } else {
+          msgApi.error("Không thể tải danh sách thành viên.");
+        }
+      } else {
+        msgApi.error("Đã xảy ra lỗi không xác định.");
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [msgApi]);
 
+  // useEffect chỉ gọi lại khi user.id thay đổi
   useEffect(() => {
-    if (hasMore) fetchRecruitments(page);
-  }, [page, fetchRecruitments, hasMore]);
+    if (!user?.id) return;
+    const controller = new AbortController();
+    fetchMemberData(user.id, controller.signal);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (loading || !hasMore) return;
-
-      const scrollTop = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const fullHeight = document.documentElement.scrollHeight;
-
-      if (scrollTop + viewportHeight >= fullHeight - 200) {
-        setPage((prev) => prev + 1);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading, hasMore]);
+    return () => controller.abort(); // cleanup khi unmount
+  }, [user?.id, fetchMemberData]);
 
   return (
-    <div
-      style={{
-        background: token.colorBgBase,
-        color: token.colorText,
-        padding: 24,
-        minHeight: "100vh",
-        transition: "background 0.3s ease, color 0.3s ease",
-      }}
-    >
-      <h1
+    <div style={{ background: token.colorBgBase, minHeight: "100vh" }}>
+      {contextHolder}
+
+      {/* Header / Hero */}
+      <div
         style={{
+          backgroundImage:
+            "linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
           textAlign: "center",
-          fontSize: 32,
-          fontWeight: 700,
-          marginBottom: 32,
-          color: token.colorPrimary,
+          color: "#fff",
+          padding: "100px 20px 80px",
         }}
       >
-        Danh sách tuyển dụng
-      </h1>
-
-      <Row
-        gutter={[24, 24]}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "stretch",
-        }}
-      >
-        {recruitments.map((job) => {
-          const isExpired = dayjs(job.deadline).isBefore(dayjs());
-          return (
-            <Col
-              xs={24}
-              sm={12}
-              md={8}
-              key={job.id}
-              style={{
-                display: "flex",
-                alignItems: "stretch",
-              }}
-            >
-              <Card
-                hoverable
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  background: token.colorBgContainer,
-                  color: token.colorText,
-                  borderRadius: token.borderRadiusLG,
-                  boxShadow: token.boxShadowTertiary,
-                  transition: "transform 0.3s",
-                }}
-                className="hover:scale-105"
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-3">
-                    <h2
-                      style={{
-                        color: token.colorTextHeading,
-                        fontSize: 18,
-                        fontWeight: 600,
-                        minHeight: 48,
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                    >
-                      {job.title}
-                    </h2>
-                    {isExpired ? (
-                      <Tag color="red">Hết hạn</Tag>
-                    ) : (
-                      <Tag color="green">Đang tuyển</Tag>
-                    )}
-                  </div>
-
-                  <div style={{ fontSize: 14, lineHeight: 1.7 }}>
-                    <p>
-                      <strong>Địa điểm:</strong> {job.location}
-                    </p>
-                    <p>
-                      <strong>Mức lương:</strong> {job.salary}
-                    </p>
-                    <p>
-                      <strong>Hạn nộp:</strong>{" "}
-                      {dayjs(job.deadline).format("DD-MM-YYYY")}
-                    </p>
-                  </div>
-                </div>
-
-                <Link to={`/recruitment/${job.id}`}>
-                  <Button
-                    type="primary"
-                    block
-                    size="middle"
-                    style={{
-                      marginTop: 16,
-                      backgroundColor: token.colorPrimary,
-                      borderColor: token.colorPrimary,
-                    }}
-                  >
-                    Xem chi tiết
-                  </Button>
-                </Link>
-              </Card>
-            </Col>
-          );
-        })}
-      </Row>
-
-      {hasMore && !loading && (
-        <div
+        <h1
           style={{
-            textAlign: "center",
-            marginTop: 40,
-            color: token.colorTextSecondary,
-            animation: "bounce 1.5s infinite",
+            fontSize: 42,
+            fontWeight: 800,
+            letterSpacing: 1,
+            marginBottom: 16,
           }}
         >
-          <DownOutlined style={{ fontSize: 24 }} />
-        </div>
-      )}
-
-      {loading && (
-        <Spin
-          size="large"
-          style={{
-            display: "block",
-            margin: "24px auto",
-            color: token.colorText,
-          }}
-        />
-      )}
-
-      {!hasMore && (
+          {currentMember?.team || "My Team"}
+        </h1>
         <p
           style={{
-            textAlign: "center",
-            marginTop: 60,
-            color: token.colorTextSecondary,
+            fontSize: 18,
+            opacity: 0.9,
+            maxWidth: 700,
+            margin: "0 auto",
+            lineHeight: 1.6,
           }}
         >
-          Bạn đã xem hết danh sách tuyển dụng
+          Cùng nhau xây dựng một tập thể năng động, sáng tạo và gắn kết — nơi mọi
+          thành viên đều đóng góp giá trị.
         </p>
-      )}
+      </div>
+
+      {/* Team Members */}
+      <div style={{ padding: "60px 40px" }}>
+        {loading ? (
+          <Spin size="large" style={{ display: "block", margin: "60px auto" }} />
+        ) : members.length > 0 ? (
+          <Row gutter={[32, 32]} justify="center">
+            {members.map((member) => (
+              <Col xs={24} sm={12} md={8} lg={6} key={member.id}>
+                <Card
+                  hoverable
+                  variant="borderless"
+                  style={{
+                    borderRadius: 20,
+                    overflow: "hidden",
+                    boxShadow:
+                      "0 4px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)",
+                    textAlign: "center",
+                    background: token.colorBgContainer,
+                    transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  }}
+                  className="hover:shadow-lg hover:-translate-y-2"
+                  cover={
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        flexDirection: "column",
+                        padding: "40px 0 20px",
+                        background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryBg})`,
+                      }}
+                    >
+                      <img
+                        src={member.avatar}
+                        alt={member.name}
+                        style={{
+                          width: 110,
+                          height: 110,
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: "4px solid #fff",
+                          boxShadow: "0 0 0 3px rgba(255,255,255,0.4)",
+                        }}
+                      />
+                    </div>
+                  }
+                >
+                  <h3
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: token.colorTextHeading,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {member.name}
+                  </h3>
+                  <div style={{ marginBottom: 12 }}>
+                    {(member.jobType || []).map((job) => (
+                      <Tag
+                        key={job}
+                        color={token.colorPrimary}
+                        style={{
+                          borderRadius: 12,
+                          padding: "2px 10px",
+                          fontSize: 12,
+                        }}
+                      >
+                        {job}
+                      </Tag>
+                    ))}
+                    {!member.jobType?.length && (
+                      <Tag color="default">Chưa có vị trí</Tag>
+                    )}
+                  </div>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: token.colorTextSecondary,
+                      marginBottom: 0,
+                    }}
+                  >
+                    {member.team || "Không thuộc team nào"}
+                  </p>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        ) : (
+          <p style={{ textAlign: "center", color: token.colorTextSecondary }}>
+            Không có thành viên nào trong team.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

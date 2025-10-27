@@ -1,4 +1,3 @@
-// routes/AppRoutes.tsx
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
 import Settings from "../pages/Settings";
@@ -33,19 +32,24 @@ export default function AppRoutes({ isDark, setIsDark }: AppRoutesProps) {
     <Routes>
       {/* Public pages */}
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={wrap(<Home />)} />
       <Route path="/recruitments" element={wrap(<RecruitmentList />)} />
       <Route path="/recruitment/:id" element={wrap(<RecruitmentDetail />)} />
       <Route path="/apply" element={wrap(<ApplicationForm />)} />
 
       {/* Private pages (admin only) */}
       <Route
+        path="/"
+        element={<PrivateRouter>{wrap(<Home />)}</PrivateRouter>}
+      />
+      <Route
         path="/settings"
         element={<PrivateRouter adminOnly>{wrap(<Settings />)}</PrivateRouter>}
       />
       <Route
         path="/team/member"
-        element={<PrivateRouter adminOnly>{wrap(<TeamMember />)}</PrivateRouter>}
+        element={
+          <PrivateRouter adminOnly>{wrap(<TeamMember />)}</PrivateRouter>
+        }
       />
       <Route
         path="/team/management"
@@ -55,18 +59,24 @@ export default function AppRoutes({ isDark, setIsDark }: AppRoutesProps) {
       />
       <Route
         path="/job/management"
-        element={<PrivateRouter adminOnly>{wrap(<JobManagement />)}</PrivateRouter>}
+        element={
+          <PrivateRouter adminOnly>{wrap(<JobManagement />)}</PrivateRouter>
+        }
       />
       <Route
         path="/recruitment/management"
         element={
-          <PrivateRouter adminOnly>{wrap(<RecruitmentManagement />)}</PrivateRouter>
+          <PrivateRouter adminOnly>
+            {wrap(<RecruitmentManagement />)}
+          </PrivateRouter>
         }
       />
       <Route
         path="/application/management"
         element={
-          <PrivateRouter adminOnly>{wrap(<ApplicationManagement />)}</PrivateRouter>
+          <PrivateRouter adminOnly>
+            {wrap(<ApplicationManagement />)}
+          </PrivateRouter>
         }
       />
     </Routes>
