@@ -1,5 +1,6 @@
 import { Layout, Grid, Drawer } from "antd";
 import { useState, useEffect } from "react";
+import { Outlet } from "react-router-dom"; //dùng cho nested route
 import Sidebar from "./SideBar";
 import HeaderBar from "./HeaderBar";
 
@@ -7,16 +8,11 @@ const { Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
 
 interface MainLayoutProps {
-  children: React.ReactNode;
   isDark: boolean;
   setIsDark: (val: boolean) => void;
 }
 
-export default function MainLayout({
-  children,
-  isDark,
-  setIsDark,
-}: MainLayoutProps) {
+export default function MainLayout({ isDark, setIsDark }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(() => {
     const stored = localStorage.getItem("sidebarCollapsed");
     return stored ? stored === "true" : false;
@@ -24,26 +20,22 @@ export default function MainLayout({
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const screens = useBreakpoint();
-
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
   const siderWidth = collapsed ? 80 : 220;
   const headerHeight = 64;
 
-  const isMobile = !screens.md;
-  const isTablet = screens.md && !screens.lg;
-
-  // Tablet tự động collapse sidebar
   useEffect(() => {
     if (isTablet) setCollapsed(true);
   }, [isTablet]);
 
-  // Lưu trạng thái collapse
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", String(collapsed));
   }, [collapsed]);
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      {/* Sidebar cố định (ẩn trên mobile) */}
+      {/* Sidebar */}
       {!isMobile && (
         <Sider
           collapsible
@@ -64,7 +56,7 @@ export default function MainLayout({
         </Sider>
       )}
 
-      {/* Drawer menu trên mobile */}
+      {/* Drawer cho mobile */}
       <Drawer
         open={drawerOpen}
         placement="left"
@@ -75,13 +67,12 @@ export default function MainLayout({
         <Sidebar collapsed={false} />
       </Drawer>
 
-      {/* Khu vực chính */}
+      {/* Nội dung chính */}
       <Layout
         style={{
           marginLeft: isMobile ? 0 : siderWidth,
           minHeight: "100vh",
           transition: "margin-left 0.2s ease",
-          // background: "var(--ant-layout-bg, #f5f5f5)",
         }}
       >
         {/* Header */}
@@ -105,7 +96,7 @@ export default function MainLayout({
           />
         </div>
 
-        {/* Content */}
+        {/* Outlet hiển thị nội dung route con */}
         <Content
           style={{
             marginTop: headerHeight,
@@ -115,7 +106,7 @@ export default function MainLayout({
             minHeight: `calc(100vh - ${headerHeight}px)`,
           }}
         >
-          {children}
+          <Outlet />
         </Content>
       </Layout>
     </Layout>

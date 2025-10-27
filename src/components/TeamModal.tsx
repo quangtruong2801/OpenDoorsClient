@@ -43,7 +43,6 @@ export default function AddTeamModal({
     <Modal
       title={isEdit ? "Chỉnh sửa Team" : "Thêm Team mới"}
       open={open}
-      onOk={handleOk}
       onCancel={() => {
         form.resetFields();
         onCancel();
@@ -51,8 +50,9 @@ export default function AddTeamModal({
       okText={isEdit ? "Cập nhật" : "Thêm"}
       cancelText="Hủy"
       maskClosable={false}
+      onOk={() => form.submit()}
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" onFinish={handleOk}>
         <Form.Item
           label="Tên Team"
           name="teamName"
