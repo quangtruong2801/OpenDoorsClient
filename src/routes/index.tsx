@@ -12,6 +12,7 @@ import PrivateRouter from "../layouts/PrivateRoute";
 import LoginPage from "../pages/LoginPage";
 import ApplicationForm from "../pages/application/ApplicationForm";
 import ApplicationManagement from "../pages/application/ApplicationManagement";
+import CameraMapPage from "../pages/CameraMapPage";
 
 interface AppRoutesProps {
   isDark: boolean;
@@ -46,6 +47,7 @@ export default function AppRoutes({ isDark, setIsDark }: AppRoutesProps) {
             <Route path="job/management" element={<JobManagement />} />
             <Route path="recruitment/management" element={<RecruitmentManagement />} />
             <Route path="application/management" element={<ApplicationManagement />} />
+            <Route path="/map" element={<CameraMapPage />} />
           </Route>
         </Route>
       </Route>

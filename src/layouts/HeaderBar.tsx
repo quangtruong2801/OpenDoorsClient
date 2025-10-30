@@ -15,9 +15,11 @@ import {
   UserOutlined,
   LogoutOutlined,
   MenuOutlined,
+  GlobalOutlined, // thêm icon quả địa cầu
 } from "@ant-design/icons";
 import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const { Header } = Layout;
 const { useBreakpoint } = Grid;
@@ -27,7 +29,7 @@ interface HeaderBarProps {
   setCollapsed: (collapsed: boolean) => void;
   isDark: boolean;
   setIsDark: (dark: boolean) => void;
-  onMenuClick?: () => void; //prop mở Drawer trên mobile
+  onMenuClick?: () => void;
 }
 
 export default function HeaderBar({
@@ -44,18 +46,40 @@ export default function HeaderBar({
   const isMobile = !screens.md;
 
   const [msgApi, contextHolder] = message.useMessage();
+  const { t, i18n } = useTranslation();
 
   const handleLogout = () => {
     logout();
-    msgApi.success("Đã đăng xuất!");
+    msgApi.success(t("logout"));
     navigate("/");
+  };
+
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem("lang", lang);
+    msgApi.success(lang === "vi" ? "Đã chuyển sang Tiếng Việt" : "Switched to English");
+  };
+
+  const languageMenu = {
+    items: [
+      {
+        key: "vi",
+        label: "Tiếng Việt",
+        onClick: () => changeLanguage("vi"),
+      },
+      {
+        key: "en",
+        label: "English",
+        onClick: () => changeLanguage("en"),
+      },
+    ],
   };
 
   const menuItems = [
     {
       key: "1",
       icon: <LogoutOutlined />,
-      label: "Đăng xuất",
+      label: t("logout"),
       onClick: handleLogout,
     },
   ];
@@ -73,7 +97,6 @@ export default function HeaderBar({
         }}
       >
         <div className="flex items-center gap-2">
-          {/* Hiển thị icon menu nếu là mobile */}
           {isMobile ? (
             <Button
               type="text"
@@ -82,7 +105,6 @@ export default function HeaderBar({
               style={{ color: token.colorText }}
             />
           ) : (
-            // Hiển thị nút collapse sidebar nếu là desktop
             <Button
               type="text"
               icon={
@@ -94,8 +116,19 @@ export default function HeaderBar({
           )}
         </div>
 
-        {/* bên phải: dark mode + user */}
         <Space size="large" align="center">
+          {/* Nút chọn ngôn ngữ */}
+          <Dropdown menu={languageMenu} placement="bottomRight" arrow>
+            <Button
+              icon={<GlobalOutlined />}
+              type="text"
+              style={{ color: token.colorText }}
+            >
+              {i18n.language === "vi" ? "VN" : "EN"}
+            </Button>
+          </Dropdown>
+
+          {/* Dark/Light Mode */}
           <Switch
             checkedChildren="🌙"
             unCheckedChildren="🌞"
@@ -103,6 +136,7 @@ export default function HeaderBar({
             onChange={setIsDark}
           />
 
+          {/* User */}
           {user ? (
             <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
               <Space className="cursor-pointer select-none">
@@ -114,7 +148,6 @@ export default function HeaderBar({
                     color: token.colorWhite,
                   }}
                 />
-                {/* Ẩn tên người dùng trên mobile để tiết kiệm chỗ */}
                 {!isMobile && (
                   <span className="font-medium">{user.name}</span>
                 )}
@@ -122,7 +155,7 @@ export default function HeaderBar({
             </Dropdown>
           ) : (
             <Button type="primary" onClick={() => navigate("/login")}>
-              Đăng nhập
+              {t("login")}
             </Button>
           )}
         </Space>

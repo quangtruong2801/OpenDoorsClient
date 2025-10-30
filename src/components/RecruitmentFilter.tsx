@@ -9,7 +9,6 @@ import {
   Col,
   Space,
   Tooltip,
-  // theme,
 } from "antd";
 import {
   SearchOutlined,
@@ -17,6 +16,7 @@ import {
   FilterOutlined,
 } from "@ant-design/icons";
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 
 type RecruitmentFilterProps = {
   filters: {
@@ -37,15 +37,14 @@ const RecruitmentFilter: FC<RecruitmentFilterProps> = ({
   onChange,
   onReset,
 }) => {
-  // const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <>
-      {/* === Tìm kiếm nhanh và nút lọc / đặt lại === */}
       <Space wrap>
         <Input
-          placeholder="Tìm theo tiêu đề"
+          placeholder={t("recruitmentFilter.searchPlaceholder")}
           prefix={<SearchOutlined />}
           value={filters.search}
           onChange={(e) => onChange({ search: e.target.value })}
@@ -53,27 +52,21 @@ const RecruitmentFilter: FC<RecruitmentFilterProps> = ({
           allowClear
         />
 
-        <Tooltip title="Bộ lọc nâng cao">
+        <Tooltip title={t("recruitmentFilter.advancedFilter")}>
           <Button
             type="default"
             icon={<FilterOutlined />}
             onClick={() => setOpen(true)}
-          ></Button>
+          />
         </Tooltip>
 
-        <Tooltip title="Đặt lại bộ lọc">
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={onReset}
-            type="default"
-            // style={{ color: token.colorPrimary }}
-          />
+        <Tooltip title={t("recruitmentFilter.resetFilter")}>
+          <Button icon={<ReloadOutlined />} onClick={onReset} type="default" />
         </Tooltip>
       </Space>
 
-      {/* === Drawer bộ lọc nâng cao === */}
       <Drawer
-        title="Bộ lọc nâng cao"
+        title={t("recruitmentFilter.drawerTitle")}
         placement="right"
         width={window.innerWidth < 768 ? "100%" : 400}
         onClose={() => setOpen(false)}
@@ -84,10 +77,10 @@ const RecruitmentFilter: FC<RecruitmentFilterProps> = ({
         footer={
           <div style={{ textAlign: "right" }}>
             <Button onClick={() => setOpen(false)} style={{ marginRight: 8 }}>
-              Đóng
+              {t("recruitmentFilter.close")}
             </Button>
             <Button type="primary" onClick={() => setOpen(false)}>
-              Áp dụng
+              {t("recruitmentFilter.apply")}
             </Button>
           </div>
         }
@@ -95,9 +88,9 @@ const RecruitmentFilter: FC<RecruitmentFilterProps> = ({
         <Form layout="vertical">
           <Row gutter={[12, 12]}>
             <Col span={24}>
-              <Form.Item label="Địa điểm">
+              <Form.Item label={t("recruitmentFilter.locationLabel")}>
                 <Select
-                  placeholder="Chọn địa điểm"
+                  placeholder={t("recruitmentFilter.selectLocation")}
                   value={filters.location || undefined}
                   onChange={(v) => onChange({ location: v || "" })}
                   allowClear
@@ -116,9 +109,9 @@ const RecruitmentFilter: FC<RecruitmentFilterProps> = ({
             </Col>
 
             <Col span={24}>
-              <Form.Item label="Mức lương">
+              <Form.Item label={t("recruitmentFilter.salaryLabel")}>
                 <Select
-                  placeholder="Chọn mức lương"
+                  placeholder={t("recruitmentFilter.selectSalary")}
                   value={filters.salary || undefined}
                   onChange={(v) => onChange({ salary: v || "" })}
                   allowClear

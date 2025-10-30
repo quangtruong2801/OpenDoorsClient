@@ -11,6 +11,7 @@ import {
 } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import axios from "~/api/config";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import type { Application } from "~/types/Application";
@@ -18,6 +19,7 @@ import type { Application } from "~/types/Application";
 const { Title } = Typography;
 
 export default function ApplicationManagement() {
+  const { t } = useTranslation();
   const [pagination, setPagination] = useState<TablePaginationConfig>({
     current: 1,
     pageSize: 10,
@@ -43,28 +45,28 @@ export default function ApplicationManagement() {
     staleTime: 1000 * 30,
   });
 
-  // Mutation: xóa hồ sơ
+  // Xóa hồ sơ
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await axios.delete(`/applications/${id}`);
     },
     onSuccess: () => {
-      msgApi.success("Đã xóa hồ sơ ứng tuyển!");
+      msgApi.success(t("applicationManagement.deleteSuccess"));
       queryClient.invalidateQueries({ queryKey: ["applications"] });
     },
-    onError: () => msgApi.error("Lỗi khi xóa!"),
+    onError: () => msgApi.error(t("applicationManagement.deleteError")),
   });
 
-  // Mutation: đổi trạng thái
+  // Đổi trạng thái
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       await axios.put(`/applications/${id}/status`, { status });
     },
     onSuccess: () => {
-      msgApi.success("Cập nhật trạng thái thành công!");
+      msgApi.success(t("applicationManagement.updateStatusSuccess"));
       queryClient.invalidateQueries({ queryKey: ["applications"] });
     },
-    onError: () => msgApi.error("Cập nhật thất bại!"),
+    onError: () => msgApi.error(t("applicationManagement.updateStatusError")),
   });
 
   const handleTableChange = (pag: TablePaginationConfig) => {
@@ -72,23 +74,43 @@ export default function ApplicationManagement() {
   };
 
   const columns: ColumnsType<Application> = [
-    { title: "Họ tên", dataIndex: "name", key: "name", width: 180 },
-    { title: "Email", dataIndex: "email", key: "email", width: 200 },
-    { title: "Số điện thoại", dataIndex: "phone", key: "phone", width: 140 },
-    { title: "Vị trí", dataIndex: "position", key: "position", width: 180 },
     {
-      title: "Hồ sơ",
+      title: t("applicationManagement.columns.name"),
+      dataIndex: "name",
+      key: "name",
+      width: 180,
+    },
+    {
+      title: t("applicationManagement.columns.email"),
+      dataIndex: "email",
+      key: "email",
+      width: 200,
+    },
+    {
+      title: t("applicationManagement.columns.phone"),
+      dataIndex: "phone",
+      key: "phone",
+      width: 140,
+    },
+    {
+      title: t("applicationManagement.columns.position"),
+      dataIndex: "position",
+      key: "position",
+      width: 180,
+    },
+    {
+      title: t("applicationManagement.columns.resume"),
       dataIndex: "resumeUrl",
       key: "resumeUrl",
       width: 150,
       render: (url: string) => (
         <a href={url} target="_blank" rel="noopener noreferrer">
-          Xem hồ sơ
+          {t("applicationManagement.viewResume")}
         </a>
       ),
     },
     {
-      title: "Trạng thái",
+      title: t("applicationManagement.columns.status"),
       dataIndex: "status",
       key: "status",
       width: 150,
@@ -98,30 +120,33 @@ export default function ApplicationManagement() {
           onChange={(val) => statusMutation.mutate({ id: record.id, status: val })}
           style={{ width: 120 }}
           options={[
-            { value: "pending", label: "Chờ duyệt" },
-            { value: "reviewed", label: "Đã xem" },
-            { value: "accepted", label: "Đã nhận" },
-            { value: "rejected", label: "Từ chối" },
+            { value: "pending", label: t("applicationManagement.status.pending") },
+            { value: "reviewed", label: t("applicationManagement.status.reviewed") },
+            { value: "accepted", label: t("applicationManagement.status.accepted") },
+            { value: "rejected", label: t("applicationManagement.status.rejected") },
           ]}
         />
       ),
     },
     {
-      title: "Ngày nộp",
+      title: t("applicationManagement.columns.createdAt"),
       dataIndex: "createdAt",
       key: "createdAt",
       width: 180,
       render: (date) => new Date(date).toLocaleString(),
     },
     {
-      title: "Hành động",
+      title: t("applicationManagement.columns.action"),
       key: "action",
       width: 100,
       render: (_, record) => (
         <Popconfirm
-          title="Xóa hồ sơ này?"
-          okText="Xóa"
-          cancelText="Hủy"
+          title={t("applicationManagement.confirmDeleteTitle")}
+          description={t("applicationManagement.confirmDeleteDesc", {
+            name: record.name,
+          })}
+          okText={t("applicationManagement.delete")}
+          cancelText={t("applicationManagement.cancel")}
           onConfirm={() => deleteMutation.mutate(record.id)}
         >
           <Button icon={<DeleteOutlined />} danger />
@@ -144,7 +169,7 @@ export default function ApplicationManagement() {
 
       <Space direction="vertical" style={{ width: "100%" }}>
         <Title level={4} style={{ marginBottom: 0 }}>
-          Quản lý hồ sơ ứng tuyển
+          {t("applicationManagement.title")}
         </Title>
 
         <Table

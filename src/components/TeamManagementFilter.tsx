@@ -1,4 +1,5 @@
 import { Input, Select, Space } from "antd";
+import { useTranslation } from "react-i18next";
 
 const { Option } = Select;
 
@@ -15,24 +16,28 @@ export default function TeamFilter({
   onSearchChange,
   onMemberFilterChange,
 }: TeamFilterProps) {
+  const { t } = useTranslation();
+
   return (
     <Space size="middle" className="flex flex-wrap w-full gap-4">
       <Input
-        placeholder="Search team..."
+        placeholder={t("teamFilter.searchPlaceholder")}
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
         style={{ width: 200 }}
+        allowClear
       />
       <Select
-        placeholder="Chọn số lượng thành viên"
+        placeholder={t("teamFilter.memberPlaceholder")}
         value={memberFilter || undefined}
         onChange={onMemberFilterChange}
-        style={{ width: 160 }}
+        style={{ width: 180 }}
+        allowClear
       >
-        {/* <Option value="all">Tất cả thành viên</Option> */}
-        <Option value="lt5">Dưới 5 thành viên</Option>
-        <Option value="5to10">Từ 5 - 10 thành viên</Option>
-        <Option value="gt10">Trên 10 thành viên</Option>
+        {/* <Option value="all">{t("teamFilter.all")}</Option> */}
+        <Option value="lt5">{t("teamFilter.lt5")}</Option>
+        <Option value="5to10">{t("teamFilter.5to10")}</Option>
+        <Option value="gt10">{t("teamFilter.gt10")}</Option>
       </Select>
     </Space>
   );

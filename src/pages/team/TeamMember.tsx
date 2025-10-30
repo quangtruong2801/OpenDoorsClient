@@ -26,6 +26,8 @@ import MemberFilter from "~/components/MemberFilter";
 
 import type { Member, NewMember } from "~/types/Member";
 import { SOCIAL_OPTIONS } from "~/constants/socials";
+import { useTranslation } from "react-i18next";
+
 
 // Định nghĩa kiểu trả về cho API /members/filter
 interface MemberResponse {
@@ -38,6 +40,7 @@ export default function TeamMember() {
   const [msgApi, contextHolder] = message.useMessage();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
 
   // --- Filters & Pagination ---
   const [filters, setFilters] = useState({
@@ -117,32 +120,32 @@ export default function TeamMember() {
   const addMemberMutation = useMutation({
     mutationFn: (values: NewMember) => axios.post("/members", values),
     onSuccess: () => {
-      msgApi.success("Thêm thành viên thành công!");
+      msgApi.success(t("teamMember.addSuccess"));
       setIsModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ["members"] });
     },
-    onError: () => msgApi.error("Thêm thất bại"),
+    onError: () => msgApi.error(t("teamMember.addFail")),
   });
 
   const editMemberMutation = useMutation({
     mutationFn: (values: NewMember) =>
       axios.put(`/members/${editingMember?.id}`, values),
     onSuccess: () => {
-      msgApi.success("Cập nhật thành viên thành công!");
+      msgApi.success(t("teamMember.editSuccess"));
       setIsModalOpen(false);
       setEditingMember(null);
       queryClient.invalidateQueries({ queryKey: ["members"] });
     },
-    onError: () => msgApi.error("Cập nhật thất bại"),
+    onError: () => msgApi.error(t("teamMember.editFail")),
   });
 
   const deleteMemberMutation = useMutation({
     mutationFn: (id: string) => axios.delete(`/members/${id}`),
     onSuccess: () => {
-      msgApi.success("Xóa thành viên thành công!");
+      msgApi.success(t("teamMember.deleteSuccess"));
       queryClient.invalidateQueries({ queryKey: ["members"] });
     },
-    onError: () => msgApi.error("Xóa thất bại"),
+    onError: () => msgApi.error(t("teamMember.deleteFail")),
   });
 
   const handleDelete = useCallback(
@@ -154,7 +157,7 @@ export default function TeamMember() {
   const columns: ColumnsType<Member> = useMemo(
     () => [
       {
-        title: "Avatar",
+        title: t("teamMember.avatar"),
         dataIndex: "avatar",
         key: "avatar",
         width: 80,
@@ -171,11 +174,11 @@ export default function TeamMember() {
           />
         ),
       },
-      { title: "Họ và tên", dataIndex: "name", key: "name", width: 180 },
-      { title: "Email", dataIndex: "email", key: "email", width: 200 },
-      { title: "Ngày sinh", dataIndex: "birthday", key: "birthday", width: 150 },
+      { title: t("teamMember.name"), dataIndex: "name", key: "name", width: 180 },
+      { title: t("teamMember.email"), dataIndex: "email", key: "email", width: 200 },
+      { title: t("teamMember.birthday"), dataIndex: "birthday", key: "birthday", width: 150 },
       {
-        title: "Sở thích",
+        title: t("teamMember.hobbies"),
         dataIndex: "hobbies",
         key: "hobbies",
         width: 220,
@@ -192,7 +195,7 @@ export default function TeamMember() {
           ),
       },
       {
-        title: "Mạng xã hội",
+        title: t("teamMember.socials"),
         dataIndex: "socials",
         key: "socials",
         width: 220,
@@ -232,10 +235,10 @@ export default function TeamMember() {
             "—"
           ),
       },
-      { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate", width: 150 },
-      { title: "Hình thức", dataIndex: "type", key: "type", width: 150 },
+      { title: t("teamMember.startDate"), dataIndex: "startDate", key: "startDate", width: 150 },
+      { title: t("teamMember.type"), dataIndex: "type", key: "type", width: 150 },
       {
-        title: "Công việc",
+        title: t("teamMember.jobType"),
         dataIndex: "jobType",
         key: "jobType",
         width: 180,
@@ -250,7 +253,7 @@ export default function TeamMember() {
       },
       { title: "Team", dataIndex: "team", key: "team", width: 150 },
       {
-        title: "Hành động",
+        title: t("teamMember.action"),
         key: "action",
         width: 120,
         fixed: "right",
@@ -265,10 +268,10 @@ export default function TeamMember() {
               }}
             />
             <Popconfirm
-              title="Xóa thành viên này?"
+              title={t("teamMember.confirmDelete")}
               onConfirm={() => handleDelete(record.id)}
-              okText="Xóa"
-              cancelText="Hủy"
+              okText={t("teamMember.ok")}
+              cancelText={t("teamMember.cancel")}
             >
               <Button type="text" icon={<DeleteOutlined />} danger />
             </Popconfirm>
@@ -276,14 +279,14 @@ export default function TeamMember() {
         ),
       },
     ],
-    [handleDelete, token.colorText]
+    [handleDelete, token.colorText, t]
   );
 
   return (
     <>
       {contextHolder}
       <Card
-        title="Quản lý thành viên"
+        title={t("teamMember.title")}
         variant="borderless"
         style={{
           background: token.colorBgContainer,
@@ -322,7 +325,7 @@ export default function TeamMember() {
               setIsModalOpen(true);
             }}
           >
-            Thêm thành viên
+            {t("teamMember.add")}
           </Button>
         </Space>
 

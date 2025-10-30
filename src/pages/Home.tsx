@@ -5,6 +5,7 @@ import api from "~/api/config";
 import type { Member } from "~/types/Member";
 import AuthContext from "~/context/AuthContext";
 import MemberDetailModal from "~/components/MemberDetailModal";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -15,6 +16,7 @@ export default function Home() {
 
   const auth = useContext(AuthContext);
   const user = auth?.user;
+  const { t } = useTranslation();
 
   // Phân trang
   const [page, setPage] = useState(1);
@@ -56,18 +58,18 @@ export default function Home() {
         console.error("Lỗi tải dữ liệu:", err);
         if (axios.isAxiosError(err)) {
           if (err.response?.status === 401) {
-            msgApi.error("Bạn chưa đăng nhập hoặc token đã hết hạn.");
+            msgApi.error(t("homePage.error.unauthorized"));
           } else {
-            msgApi.error("Không thể tải danh sách thành viên.");
+            msgApi.error(t("homePage.error.fetchFailed"));
           }
         } else {
-          msgApi.error("Đã xảy ra lỗi không xác định.");
+          msgApi.error(t("homePage.error.unknown"));
         }
       } finally {
         setLoading(false);
       }
     },
-    [msgApi, pageSize]
+    [msgApi, pageSize, t]
   );
 
   // useEffect gọi khi user.id hoặc page thay đổi
@@ -103,7 +105,7 @@ export default function Home() {
             marginBottom: 16,
           }}
         >
-          {currentMember?.team || "My Team"}
+          {currentMember?.team || t("homePage.teamTitle")}
         </h1>
         <p
           style={{
@@ -114,18 +116,14 @@ export default function Home() {
             lineHeight: 1.6,
           }}
         >
-          Cùng nhau xây dựng một tập thể năng động, sáng tạo và gắn kết — nơi
-          mọi thành viên đều đóng góp giá trị.
+          {t("homePage.teamDescription")}
         </p>
       </div>
 
       {/* Team Members */}
       <div style={{ padding: "60px 40px" }}>
         {loading ? (
-          <Spin
-            size="large"
-            style={{ display: "block", margin: "60px auto" }}
-          />
+          <Spin size="large" style={{ display: "block", margin: "60px auto" }} />
         ) : members.length > 0 ? (
           <>
             <Row gutter={[32, 32]} justify="center">
@@ -197,7 +195,7 @@ export default function Home() {
                     >
                       {member.jobType && member.jobType.length > 0
                         ? member.jobType.join(", ")
-                        : "Chưa có vị trí"}
+                        : t("homePage.noJobType")}
                     </p>
 
                     <p
@@ -207,7 +205,7 @@ export default function Home() {
                         marginBottom: 0,
                       }}
                     >
-                      {member.team || "Không thuộc team nào"}
+                      {member.team || t("homePage.noTeam")}
                     </p>
                   </Card>
                 </Col>
@@ -228,7 +226,7 @@ export default function Home() {
           </>
         ) : (
           <p style={{ textAlign: "center", color: token.colorTextSecondary }}>
-            Không có thành viên nào trong team.
+            {t("homePage.noMembers")}
           </p>
         )}
       </div>

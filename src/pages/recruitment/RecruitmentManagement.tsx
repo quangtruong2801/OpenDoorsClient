@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import api from "~/api/config";
 import type { Recruitment } from "~/types/Recruitment";
@@ -25,6 +26,7 @@ import useDebounce from "~/hooks/useDebounce";
 import RecruitmentFilter from "~/components/RecruitmentFilter";
 
 export default function RecruitmentManagement() {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecruitment, setEditingRecruitment] =
     useState<Recruitment | null>(null);
@@ -54,7 +56,7 @@ export default function RecruitmentManagement() {
     setSearchParams(params);
   }, [filters, setSearchParams]);
 
-  // ✅ Fetch list with TanStack Query v5
+  // Fetch list bằng TanStack Query
   const {
     data = { items: [], total: 0 },
     isPending,
@@ -79,12 +81,12 @@ export default function RecruitmentManagement() {
         total,
       };
     },
-    placeholderData: (prev) => prev, // ✅ Thay thế cho keepPreviousData
+    placeholderData: (prev) => prev,
     staleTime: 1000 * 30,
     retry: 1,
   });
 
-  // ✅ Add recruitment
+  // Add recruitment
   const addMutation = useMutation({
     mutationFn: async (values: Omit<Recruitment, "id">) => {
       await api.post("/recruitments", {
@@ -93,14 +95,14 @@ export default function RecruitmentManagement() {
       });
     },
     onSuccess: () => {
-      msgApi.success("Thêm tin tuyển dụng thành công!");
+      msgApi.success(t("recruitmentManagement.addSuccess"));
       queryClient.invalidateQueries({ queryKey: ["recruitments"] });
       setIsModalOpen(false);
     },
-    onError: () => msgApi.error("Thêm thất bại"),
+    onError: () => msgApi.error(t("recruitmentManagement.addError")),
   });
 
-  // ✅ Edit recruitment
+  // Edit recruitment
   const editMutation = useMutation({
     mutationFn: async (values: Omit<Recruitment, "id">) => {
       if (!editingRecruitment) return;
@@ -110,39 +112,55 @@ export default function RecruitmentManagement() {
       });
     },
     onSuccess: () => {
-      msgApi.success("Cập nhật tin thành công!");
+      msgApi.success(t("recruitmentManagement.updateSuccess"));
       queryClient.invalidateQueries({ queryKey: ["recruitments"] });
       setEditingRecruitment(null);
       setIsModalOpen(false);
     },
-    onError: () => msgApi.error("Cập nhật thất bại"),
+    onError: () => msgApi.error(t("recruitmentManagement.updateError")),
   });
 
-  // ✅ Delete recruitment
+  // Delete recruitment
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/recruitments/${id}`);
     },
     onSuccess: () => {
-      msgApi.success("Xóa thành công!");
+      msgApi.success(t("recruitmentManagement.deleteSuccess"));
       queryClient.invalidateQueries({ queryKey: ["recruitments"] });
     },
-    onError: () => msgApi.error("Xóa thất bại"),
+    onError: () => msgApi.error(t("recruitmentManagement.deleteError")),
   });
 
+  // Cấu hình bảng
   const columns: ColumnsType<Recruitment> = useMemo(
     () => [
-      { title: "Tiêu đề", dataIndex: "title", key: "title", width: 180 },
-      { title: "Mức lương", dataIndex: "salary", key: "salary", width: 120 },
-      { title: "Địa điểm", dataIndex: "location", key: "location", width: 150 },
       {
-        title: "Kinh nghiệm",
+        title: t("recruitmentManagement.columns.title"),
+        dataIndex: "title",
+        key: "title",
+        width: 180,
+      },
+      {
+        title: t("recruitmentManagement.columns.salary"),
+        dataIndex: "salary",
+        key: "salary",
+        width: 120,
+      },
+      {
+        title: t("recruitmentManagement.columns.location"),
+        dataIndex: "location",
+        key: "location",
+        width: 150,
+      },
+      {
+        title: t("recruitmentManagement.columns.experience"),
         dataIndex: "experience",
         key: "experience",
         width: 120,
       },
       {
-        title: "Hạn nộp",
+        title: t("recruitmentManagement.columns.deadline"),
         dataIndex: "deadline",
         key: "deadline",
         width: 120,
@@ -150,7 +168,7 @@ export default function RecruitmentManagement() {
           date ? dayjs(date).format("DD/MM/YYYY") : "",
       },
       {
-        title: "Mô tả công việc",
+        title: t("recruitmentManagement.columns.description"),
         dataIndex: "description",
         key: "description",
         width: 250,
@@ -164,7 +182,7 @@ export default function RecruitmentManagement() {
         ),
       },
       {
-        title: "Yêu cầu ứng viên",
+        title: t("recruitmentManagement.columns.requirements"),
         dataIndex: "requirements",
         key: "requirements",
         width: 250,
@@ -178,7 +196,7 @@ export default function RecruitmentManagement() {
         ),
       },
       {
-        title: "Quyền lợi",
+        title: t("recruitmentManagement.columns.benefits"),
         dataIndex: "benefits",
         key: "benefits",
         width: 250,
@@ -192,7 +210,7 @@ export default function RecruitmentManagement() {
         ),
       },
       {
-        title: "Hành động",
+        title: t("recruitmentManagement.columns.action"),
         key: "action",
         width: 120,
         fixed: "right",
@@ -207,11 +225,13 @@ export default function RecruitmentManagement() {
               }}
             />
             <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc muốn xóa tin tuyển dụng "${record.title}"?`}
+              title={t("recruitmentManagement.delete")}
+              description={t("recruitmentManagement.confirmDelete", {
+                name: record.title,
+              })}
               onConfirm={() => deleteMutation.mutate(record.id)}
-              okText="Xóa"
-              cancelText="Hủy"
+              okText={t("recruitmentManagement.delete")}
+              cancelText={t("recruitmentManagement.reset")}
               okButtonProps={{ danger: true }}
             >
               <Button type="text" danger icon={<DeleteOutlined />} />
@@ -220,12 +240,12 @@ export default function RecruitmentManagement() {
         ),
       },
     ],
-    [deleteMutation, token.colorPrimary]
+    [deleteMutation, token.colorPrimary, t]
   );
 
   return (
     <Card
-      title="Quản lý tin tuyển dụng"
+      title={t("recruitmentManagement.title")}
       style={{
         background: token.colorBgContainer,
         borderRadius: token.borderRadiusLG,
@@ -271,7 +291,7 @@ export default function RecruitmentManagement() {
             setIsModalOpen(true);
           }}
         >
-          Thêm tin tuyển dụng
+          {t("recruitmentManagement.add")}
         </Button>
       </div>
 

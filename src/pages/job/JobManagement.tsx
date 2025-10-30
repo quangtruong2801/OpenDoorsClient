@@ -18,6 +18,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import api from "~/api/config";
 import type { Job } from "~/types/Job";
@@ -25,6 +26,7 @@ import AddJobModal from "~/components/JobModal";
 import useDebounce from "~/hooks/useDebounce";
 
 export default function JobManagement() {
+  const { t } = useTranslation();
   const [msgApi, contextHolder] = message.useMessage();
   const queryClient = useQueryClient();
 
@@ -40,7 +42,6 @@ export default function JobManagement() {
   const pageSizeOptions = ["5", "10", "20", "50", "100"];
   const debouncedSearch = useDebounce(search, 500);
 
-  // Cập nhật URL khi search / page thay đổi
   useEffect(() => {
     const params: Record<string, string> = {
       page: page.toString(),
@@ -50,7 +51,6 @@ export default function JobManagement() {
     setSearchParams(params);
   }, [search, page, pageSize, setSearchParams]);
 
-  // Fetch danh sách công việc
   const { data, isLoading } = useQuery({
     queryKey: ["jobs", debouncedSearch],
     queryFn: async () => {
@@ -62,48 +62,45 @@ export default function JobManagement() {
     },
   });
 
-  // Mutation: Thêm công việc
   const addJob = useMutation({
     mutationFn: (values: Omit<Job, "jobId">) => api.post("/jobs", values),
     onSuccess: () => {
-      msgApi.success("Thêm công việc thành công!");
+      msgApi.success(t("jobManagement.addSuccess"));
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setIsModalOpen(false);
     },
-    onError: () => msgApi.error("Thêm công việc thất bại"),
+    onError: () => msgApi.error(t("jobManagement.addError")),
   });
 
-  // Mutation: Sửa công việc
   const editJob = useMutation({
     mutationFn: (values: Partial<Job>) =>
       api.put(`/jobs/${editingJob?.jobId}`, values),
     onSuccess: () => {
-      msgApi.success("Cập nhật công việc thành công!");
+      msgApi.success(t("jobManagement.updateSuccess"));
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setEditingJob(null);
       setIsModalOpen(false);
     },
-    onError: () => msgApi.error("Cập nhật công việc thất bại"),
+    onError: () => msgApi.error(t("jobManagement.updateError")),
   });
 
-  // Mutation: Xóa công việc
   const deleteJob = useMutation({
     mutationFn: (jobId: string) => api.delete(`/jobs/${jobId}`),
     onSuccess: () => {
-      msgApi.success("Xóa công việc thành công!");
+      msgApi.success(t("jobManagement.deleteSuccess"));
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
     },
-    onError: () => msgApi.error("Có lỗi khi xóa!"),
+    onError: () => msgApi.error(t("jobManagement.deleteError")),
   });
 
   const columns: ColumnsType<Job> = useMemo(
     () => [
-      { title: "Tên công việc", dataIndex: "jobName", key: "jobName", width: 200 },
-      { title: "Kỹ năng", dataIndex: "skills", key: "skills", width: 200 },
-      { title: "Yêu cầu", dataIndex: "requirement", key: "requirement", width: 220 },
-      { title: "Mô tả", dataIndex: "description", key: "description", width: 250 },
+      { title: t("jobManagement.columns.name"), dataIndex: "jobName", key: "jobName", width: 200 },
+      { title: t("jobManagement.columns.skills"), dataIndex: "skills", key: "skills", width: 200 },
+      { title: t("jobManagement.columns.requirement"), dataIndex: "requirement", key: "requirement", width: 220 },
+      { title: t("jobManagement.columns.description"), dataIndex: "description", key: "description", width: 250 },
       {
-        title: "Hành động",
+        title: t("jobManagement.columns.action"),
         key: "action",
         fixed: "right",
         width: 120,
@@ -118,9 +115,9 @@ export default function JobManagement() {
               }}
             />
             <Popconfirm
-              title={`Bạn có chắc muốn xóa công việc "${record.jobName}"?`}
+              title={t("jobManagement.confirmDelete", { name: record.jobName })}
               onConfirm={() => deleteJob.mutate(record.jobId)}
-              okText="Xóa"
+              okText={t("jobManagement.delete")}
               cancelText="Hủy"
             >
               <Button type="text" icon={<DeleteOutlined />} danger />
@@ -129,7 +126,7 @@ export default function JobManagement() {
         ),
       },
     ],
-    [deleteJob]
+    [deleteJob, t]
   );
 
   const handleReset = () => {
@@ -141,7 +138,7 @@ export default function JobManagement() {
   return (
     <>
       {contextHolder}
-      <Card title="Quản lý công việc">
+      <Card title={t("jobManagement.title")}>
         <Space
           style={{
             marginBottom: 16,
@@ -152,7 +149,7 @@ export default function JobManagement() {
         >
           <Space>
             <Input
-              placeholder="Tìm kiếm công việc..."
+              placeholder={t("jobManagement.searchPlaceholder")}
               prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => {
@@ -161,7 +158,9 @@ export default function JobManagement() {
               }}
               style={{ width: 260 }}
             />
-            <Button icon={<ReloadOutlined />} onClick={handleReset} />
+            <Button icon={<ReloadOutlined />} onClick={handleReset}>
+              {/* {t("jobManagement.reset")} */}
+            </Button>
           </Space>
 
           <Button
@@ -172,7 +171,7 @@ export default function JobManagement() {
               setIsModalOpen(true);
             }}
           >
-            Thêm công việc
+            {t("jobManagement.add")}
           </Button>
         </Space>
 
