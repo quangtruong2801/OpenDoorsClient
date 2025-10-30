@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import axios from "../api/config";
 import type { NewMember, Social, Member } from "../types/Member";
 import { SOCIAL_OPTIONS } from "../constants/socials";
+import { useTranslation } from "react-i18next";
 
 type AddMemberModalProps = {
   open: boolean;
@@ -40,8 +41,9 @@ export default function AddMemberModal({
   const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   const { token } = theme.useToken();
+  const { t } = useTranslation();
 
-  // Lấy dữ liệu team + job
+  // Fetch team & job data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -52,13 +54,13 @@ export default function AddMemberModal({
         setTeams(teamsRes.data);
         setJobs(jobsRes.data);
       } catch {
-        message.error("Không thể tải danh sách team hoặc công việc");
+        message.error(t("addMember.loadFail"));
       }
     };
     fetchData();
-  }, []);
+  }, [t]);
 
-  // Khi mở modal
+  // Set form when open
   useEffect(() => {
     if (open) {
       if (initialValues) {
@@ -88,7 +90,7 @@ export default function AddMemberModal({
     }
   }, [open, initialValues, form, teams]);
 
-  // Xử lý upload ảnh
+  // Handle avatar
   const handleAvatarSelect = (file: File) => {
     setAvatarFile(file);
     const reader = new FileReader();
@@ -97,13 +99,13 @@ export default function AddMemberModal({
     return false;
   };
 
-  // Submit
+  // Submit form
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
 
       if (!values.socials?.length) {
-        message.error("Bạn phải nhập ít nhất 1 mạng xã hội!");
+        message.error(t("addMember.requireSocial"));
         return;
       }
 
@@ -113,7 +115,6 @@ export default function AddMemberModal({
       if (avatarFile) {
         const formData = new FormData();
         formData.append("File", avatarFile);
-
         try {
           const res = await axios.post("/upload/upload", formData, {
             headers: { "Content-Type": "multipart/form-data" },
@@ -121,13 +122,12 @@ export default function AddMemberModal({
           avatarUploadUrl = res.data.url;
           avatarPublicId = res.data.publicId;
         } catch {
-          message.error("Tải ảnh thất bại!");
+          message.error(t("addMember.uploadFail"));
           return;
         }
       }
 
       const teamObj = teams.find((t) => t.id === values.teamId);
-
       const payload: NewMember = {
         ...values,
         ...(values.password?.trim() ? { password: values.password } : {}),
@@ -156,13 +156,13 @@ export default function AddMemberModal({
       setAvatarUrl("");
       setAvatarFile(null);
     } catch {
-      message.error("Điền đầy đủ thông tin hợp lệ!");
+      message.error(t("addMember.invalidForm"));
     }
   };
 
   return (
     <Modal
-      title={isEdit ? "Chỉnh sửa thành viên" : "Thêm thành viên mới"}
+      title={isEdit ? t("addMember.editTitle") : t("addMember.addTitle")}
       open={open}
       onOk={handleOk}
       onCancel={() => {
@@ -171,8 +171,8 @@ export default function AddMemberModal({
         setAvatarFile(null);
         onCancel();
       }}
-      okText="Lưu"
-      cancelText="Hủy"
+      okText={t("common.save")}
+      cancelText={t("common.cancel")}
       width={900}
       styles={{
         content: {
@@ -183,48 +183,34 @@ export default function AddMemberModal({
     >
       <Form layout="vertical" form={form}>
         <Row gutter={16}>
-          {/* --- Cột trái --- */}
           <Col xs={24} sm={12}>
-            <Form.Item name="name" label="Họ và tên" rules={[{ required: true }]}>
-              <Input placeholder="Nhập họ tên" />
+            <Form.Item name="name" label={t("addMember.name")} rules={[{ required: true }]}>
+              <Input placeholder={t("addMember.namePlaceholder")} />
             </Form.Item>
 
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[{ required: true, type: "email" }]}
-            >
-              <Input placeholder="Nhập email" />
+            <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
+              <Input placeholder="Email" />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label={isEdit ? "Mật khẩu (để trống nếu không đổi)" : "Mật khẩu"}
-              rules={[{ required: !isEdit, message: "Nhập mật khẩu" }]}
+              label={isEdit ? t("addMember.passwordEdit") : t("addMember.password")}
+              rules={[{ required: !isEdit, message: t("addMember.passwordRequired") }]}
             >
-              <Input.Password placeholder="Nhập mật khẩu" />
+              <Input.Password placeholder={t("addMember.passwordPlaceholder")} />
             </Form.Item>
 
             <Form.Item
               name="avatar"
-              label="Ảnh đại diện"
-              rules={[{ required: true, message: "Vui lòng tải ảnh đại diện" }]}
+              label={t("addMember.avatar")}
+              rules={[{ required: true, message: t("addMember.avatarRequired") }]}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <Upload
-                  accept="image/*"
-                  beforeUpload={handleAvatarSelect}
-                  showUploadList={false}
-                >
-                  <Button
-                    icon={<UploadOutlined />}
-                    type="primary"
-                    ghost={!!avatarUrl}
-                  >
-                    {avatarUrl ? "Thay ảnh" : "Chọn ảnh từ máy"}
+                <Upload accept="image/*" beforeUpload={handleAvatarSelect} showUploadList={false}>
+                  <Button icon={<UploadOutlined />} type="primary" ghost={!!avatarUrl}>
+                    {avatarUrl ? t("addMember.changeAvatar") : t("addMember.selectAvatar")}
                   </Button>
                 </Upload>
-
                 {avatarUrl && (
                   <img
                     src={avatarUrl}
@@ -241,26 +227,21 @@ export default function AddMemberModal({
               </div>
             </Form.Item>
 
-            <Form.Item
-              name="birthday"
-              label="Ngày sinh"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="birthday" label={t("addMember.birthday")} rules={[{ required: true }]}>
               <DatePicker format="DD-MM-YYYY" style={{ width: "100%" }} />
             </Form.Item>
 
             <Form.Item
               name="hobbies"
-              label="Sở thích"
-              rules={[{ required: true, message: "Vui lòng nhập ít nhất 1 sở thích" }]}
+              label={t("addMember.hobbies")}
+              rules={[{ required: true, message: t("addMember.hobbiesRequired") }]}
             >
-              <Input.TextArea rows={4} placeholder="Nhập mỗi dòng 1 sở thích" />
+              <Input.TextArea rows={4} placeholder={t("addMember.hobbiesPlaceholder")} />
             </Form.Item>
           </Col>
 
-          {/* --- Cột phải --- */}
           <Col xs={24} sm={12}>
-            <Form.Item label="Mạng xã hội" required>
+            <Form.Item label={t("addMember.socials")} required>
               <Form.List name="socials">
                 {(fields, { add, remove }) => (
                   <>
@@ -281,10 +262,12 @@ export default function AddMemberModal({
                           style={{ flex: 2, marginBottom: 0 }}
                         >
                           <Select
-                            placeholder="Chọn nền tảng"
+                            placeholder={t("addMember.selectPlatform")}
                             options={SOCIAL_OPTIONS.map((s) => ({
                               label: (
-                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                <span
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                                >
                                   <s.icon color={s.color} /> {s.label}
                                 </span>
                               ),
@@ -299,7 +282,7 @@ export default function AddMemberModal({
                           rules={[{ required: true, type: "url" }]}
                           style={{ flex: 3, marginBottom: 0 }}
                         >
-                          <Input placeholder="Nhập link" />
+                          <Input placeholder={t("addMember.linkPlaceholder")} />
                         </Form.Item>
 
                         <DeleteOutlined
@@ -308,7 +291,6 @@ export default function AddMemberModal({
                         />
                       </div>
                     ))}
-
                     <Form.Item>
                       <Button
                         type="dashed"
@@ -316,7 +298,7 @@ export default function AddMemberModal({
                         block
                         icon={<PlusOutlined />}
                       >
-                        Thêm mạng xã hội
+                        {t("addMember.addSocial")}
                       </Button>
                     </Form.Item>
                   </>
@@ -326,7 +308,7 @@ export default function AddMemberModal({
 
             <Form.Item name="teamId" label="Team" rules={[{ required: true }]}>
               <Select
-                placeholder="Chọn team"
+                placeholder={t("addMember.selectTeam")}
                 options={teams.map((t) => ({
                   label: t.teamName,
                   value: t.id,
@@ -334,9 +316,9 @@ export default function AddMemberModal({
               />
             </Form.Item>
 
-            <Form.Item name="type" label="Hình thức" rules={[{ required: true }]}>
+            <Form.Item name="type" label={t("addMember.type")} rules={[{ required: true }]}>
               <Select
-                placeholder="Chọn hình thức"
+                placeholder={t("addMember.selectType")}
                 options={[
                   { label: "Full Time", value: "fulltime" },
                   { label: "Part Time", value: "parttime" },
@@ -345,14 +327,10 @@ export default function AddMemberModal({
               />
             </Form.Item>
 
-            <Form.Item
-              name="jobType"
-              label="Công việc"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="jobType" label={t("addMember.jobs")} rules={[{ required: true }]}>
               <Select
                 mode="multiple"
-                placeholder="Chọn công việc"
+                placeholder={t("addMember.selectJob")}
                 options={jobs.map((job) => ({
                   label: job.jobName,
                   value: job.jobName,
@@ -360,11 +338,7 @@ export default function AddMemberModal({
               />
             </Form.Item>
 
-            <Form.Item
-              name="startDate"
-              label="Ngày bắt đầu"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="startDate" label={t("addMember.startDate")} rules={[{ required: true }]}>
               <DatePicker format="DD-MM-YYYY" style={{ width: "100%" }} />
             </Form.Item>
           </Col>

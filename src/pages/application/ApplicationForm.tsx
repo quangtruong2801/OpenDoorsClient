@@ -3,10 +3,12 @@ import { UploadOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "~/api/config";
+import { useTranslation } from "react-i18next";
 
-const { Title, Text } = Typography;
+const { Title} = Typography;
 
 export default function ApplicationForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -17,13 +19,11 @@ export default function ApplicationForm() {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
-
-  // useMessage instance
   const [messageApi, contextHolder] = message.useMessage();
 
   const onFinish = async (values: { name: string; email: string; phone: string }) => {
     if (!file) {
-      messageApi.warning("Vui lòng chọn hồ sơ đính kèm!");
+      messageApi.warning(t("applicationForm.fileWarning"));
       return;
     }
 
@@ -41,11 +41,11 @@ export default function ApplicationForm() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setSubmitted(true);
-      messageApi.success("Gửi hồ sơ thành công!");
+      messageApi.success(t("applicationForm.submitSuccess"));
       setTimeout(() => navigate("/recruitments"), 2000);
     } catch (err) {
       console.error(err);
-      messageApi.error("Gửi hồ sơ thất bại!");
+      messageApi.error(t("applicationForm.submitFail"));
     } finally {
       setLoading(false);
     }
@@ -55,18 +55,11 @@ export default function ApplicationForm() {
     return (
       <>
         {contextHolder}
-        <Card
-          style={{
-            maxWidth: 480,
-            margin: "60px auto",
-            textAlign: "center",
-            borderRadius: 16,
-          }}
-        >
+        <Card style={{ maxWidth: 480, margin: "60px auto", textAlign: "center", borderRadius: 16 }}>
           <Result
             status="success"
-            title="Cảm ơn bạn đã ứng tuyển!"
-            subTitle="Bạn sẽ được chuyển về trang chủ trong giây lát..."
+            title={t("applicationForm.successTitle")}
+            subTitle={t("applicationForm.successSubTitle")}
           />
         </Card>
       </>
@@ -79,86 +72,68 @@ export default function ApplicationForm() {
       <Card
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(-1)}
-            />
+            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+            </Button>
             <Title level={4} style={{ margin: 0 }}>
-              Ứng tuyển vị trí: {positionTitle}
+              {t("applicationForm.applyTitle", { title: positionTitle })}
             </Title>
           </div>
         }
-        style={{
-          maxWidth: 600,
-          margin: "60px auto",
-          borderRadius: 16,
-        }}
+        style={{ maxWidth: 600, margin: "60px auto", borderRadius: 16 }}
       >
         <Form layout="vertical" onFinish={onFinish}>
           <Form.Item
             name="name"
-            label="Họ và tên"
-            rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
+            label={t("applicationForm.fullName")}
+            rules={[{ required: true, message: t("applicationForm.rules.name") }]}
           >
-            <Input placeholder="Nhập họ tên của bạn" />
+            <Input placeholder={t("applicationForm.placeholder.name")} />
           </Form.Item>
 
           <Form.Item
             name="email"
-            label="Email"
+            label={t("applicationForm.email")}
             rules={[
-              { required: true, message: "Vui lòng nhập email!" },
-              { type: "email", message: "Email không hợp lệ!" },
+              { required: true, message: t("applicationForm.rules.email") },
+              { type: "email", message: t("applicationForm.rules.invalidEmail") },
             ]}
           >
-            <Input placeholder="example@email.com" />
+            <Input placeholder={t("applicationForm.placeholder.email")} />
           </Form.Item>
 
           <Form.Item
             name="phone"
-            label="Số điện thoại"
-            rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
+            label={t("applicationForm.phone")}
+            rules={[{ required: true, message: t("applicationForm.rules.phone") }]}
           >
-            <Input placeholder="Nhập số điện thoại" />
+            <Input placeholder={t("applicationForm.placeholder.phone")} />
           </Form.Item>
 
           <Form.Item
-            label="Hồ sơ đính kèm (PDF)"
+            label={t("applicationForm.resume")}
             required
-            tooltip="Chỉ nhận 1 file PDF duy nhất"
+            tooltip={t("applicationForm.resumeTooltip")}
           >
             <Upload
               accept=".pdf"
               beforeUpload={(file) => {
                 const isPDF = file.type === "application/pdf";
                 if (!isPDF) {
-                  messageApi.error("Chỉ chấp nhận file PDF!");
+                  messageApi.error(t("applicationForm.pdfOnly"));
                   return Upload.LIST_IGNORE;
                 }
                 setFile(file);
-                return false; // chặn upload tự động
+                return false;
               }}
               maxCount={1}
             >
-              <Button icon={<UploadOutlined />}>Chọn file</Button>
+              <Button icon={<UploadOutlined />}>{t("applicationForm.selectFile")}</Button>
             </Upload>
-            {file && (
-              <Text type="secondary" style={{ marginTop: 8, display: "block" }}>
-                {/* File đã chọn: <strong>{file.name}</strong> */}
-              </Text>
-            )}
           </Form.Item>
 
           <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              size="large"
-            >
-              Gửi hồ sơ
+            <Button type="primary" htmlType="submit" loading={loading} block size="large">
+              {t("applicationForm.submit")}
             </Button>
           </Form.Item>
         </Form>

@@ -3,6 +3,7 @@ import { Card, Row, Col, Spin, Button, Tag, theme } from "antd";
 import { Link } from "react-router-dom";
 import { DownOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 import api from "~/api/config";
 import type { Recruitment } from "~/types/Recruitment";
 
@@ -16,7 +17,8 @@ export default function RecruitmentList() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const { token } = theme.useToken(); // Lấy token từ ConfigProvider
+  const { token } = theme.useToken();
+  const { t } = useTranslation();
 
   const limit = 6;
 
@@ -86,16 +88,12 @@ export default function RecruitmentList() {
           color: token.colorPrimary,
         }}
       >
-        Danh sách tuyển dụng
+        {t("recruitmentList.title")}
       </h1>
 
       <Row
         gutter={[24, 24]}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "stretch",
-        }}
+        style={{ display: "flex", flexWrap: "wrap", alignItems: "stretch" }}
       >
         {recruitments.map((job) => {
           const isExpired = dayjs(job.deadline).isBefore(dayjs());
@@ -105,10 +103,7 @@ export default function RecruitmentList() {
               sm={12}
               md={8}
               key={job.id}
-              style={{
-                display: "flex",
-                alignItems: "stretch",
-              }}
+              style={{ display: "flex", alignItems: "stretch" }}
             >
               <Card
                 hoverable
@@ -142,21 +137,23 @@ export default function RecruitmentList() {
                       {job.title}
                     </h2>
                     {isExpired ? (
-                      <Tag color="red">Hết hạn</Tag>
+                      <Tag color="red">{t("recruitmentList.expired")}</Tag>
                     ) : (
-                      <Tag color="green">Đang tuyển</Tag>
+                      <Tag color="green">{t("recruitmentList.active")}</Tag>
                     )}
                   </div>
 
                   <div style={{ fontSize: 14, lineHeight: 1.7 }}>
                     <p>
-                      <strong>Địa điểm:</strong> {job.location}
+                      <strong>{t("recruitmentList.location")}:</strong>{" "}
+                      {job.location}
                     </p>
                     <p>
-                      <strong>Mức lương:</strong> {job.salary}
+                      <strong>{t("recruitmentList.salary")}:</strong>{" "}
+                      {job.salary}
                     </p>
                     <p>
-                      <strong>Hạn nộp:</strong>{" "}
+                      <strong>{t("recruitmentList.deadline")}:</strong>{" "}
                       {dayjs(job.deadline).format("DD-MM-YYYY")}
                     </p>
                   </div>
@@ -173,7 +170,7 @@ export default function RecruitmentList() {
                       borderColor: token.colorPrimary,
                     }}
                   >
-                    Xem chi tiết
+                    {t("recruitmentList.viewMore")}
                   </Button>
                 </Link>
               </Card>
@@ -196,14 +193,12 @@ export default function RecruitmentList() {
       )}
 
       {loading && (
-        <Spin
-          size="large"
-          style={{
-            display: "block",
-            margin: "24px auto",
-            color: token.colorText,
-          }}
-        />
+        <div style={{ textAlign: "center", marginTop: 24 }}>
+          <Spin size="large" />
+          <p style={{ marginTop: 8, color: token.colorTextSecondary }}>
+            {t("recruitmentList.loading")}
+          </p>
+        </div>
       )}
 
       {!hasMore && (
@@ -214,7 +209,7 @@ export default function RecruitmentList() {
             color: token.colorTextSecondary,
           }}
         >
-          Bạn đã xem hết danh sách tuyển dụng
+          {t("recruitmentList.noMore")}
         </p>
       )}
     </div>

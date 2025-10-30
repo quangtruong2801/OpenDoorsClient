@@ -1,5 +1,6 @@
 import { Modal, Form, Input } from "antd";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 type AddJobModalProps = {
   open: boolean;
@@ -15,6 +16,7 @@ export default function AddJobModal({
   initialValues,
 }: AddJobModalProps) {
   const [form] = Form.useForm();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -32,13 +34,17 @@ export default function AddJobModal({
       onSubmit(values);
       form.resetFields();
     } catch {
-      // validate fail
+      // validation failed
     }
   };
 
   return (
     <Modal
-      title={initialValues ? "Chỉnh sửa công việc" : "Thêm công việc mới"}
+      title={
+        initialValues
+          ? t("addJobModal.editTitle")
+          : t("addJobModal.addTitle")
+      }
       open={open}
       onOk={handleOk}
       onCancel={() => {
@@ -46,41 +52,55 @@ export default function AddJobModal({
         onCancel();
       }}
       destroyOnHidden
-      okText="Lưu"
-      cancelText="Hủy"
+      okText={t("addJobModal.save")}
+      cancelText={t("addJobModal.cancel")}
       maskClosable={false}
     >
       <Form layout="vertical" form={form}>
         <Form.Item
           name="jobName"
-          label="Tên công việc"
-          rules={[{ required: true, message: "Vui lòng nhập tên công việc" }]}
+          label={t("addJobModal.jobName")}
+          rules={[
+            { required: true, message: t("addJobModal.jobNameRequired") },
+          ]}
         >
-          <Input placeholder="Nhập tên công việc" />
+          <Input placeholder={t("addJobModal.jobNamePlaceholder")} />
         </Form.Item>
 
         <Form.Item
           name="skills"
-          label="Kỹ năng"
-          rules={[{ required: true, message: "Vui lòng nhập kỹ năng" }]}
+          label={t("addJobModal.skills")}
+          rules={[
+            { required: true, message: t("addJobModal.skillsRequired") },
+          ]}
         >
-          <Input placeholder="VD: React, Node.js" />
+          <Input placeholder={t("addJobModal.skillsPlaceholder")} />
         </Form.Item>
 
         <Form.Item
           name="requirement"
-          label="Yêu cầu"
-          rules={[{ required: true, message: "Vui lòng nhập yêu cầu" }]}
+          label={t("addJobModal.requirement")}
+          rules={[
+            { required: true, message: t("addJobModal.requirementRequired") },
+          ]}
         >
-          <Input.TextArea placeholder="Nhập yêu cầu công việc" rows={3} />
+          <Input.TextArea
+            placeholder={t("addJobModal.requirementPlaceholder")}
+            rows={3}
+          />
         </Form.Item>
 
         <Form.Item
           name="description"
-          label="Mô tả"
-          rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
+          label={t("addJobModal.description")}
+          rules={[
+            { required: true, message: t("addJobModal.descriptionRequired") },
+          ]}
         >
-          <Input.TextArea placeholder="Mô tả chi tiết công việc" rows={4} />
+          <Input.TextArea
+            placeholder={t("addJobModal.descriptionPlaceholder")}
+            rows={4}
+          />
         </Form.Item>
       </Form>
     </Modal>

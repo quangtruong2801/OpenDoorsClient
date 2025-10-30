@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import api from "~/api/config";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -45,8 +46,9 @@ export default function RecruitmentDetail() {
   const navigate = useNavigate();
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const { t } = useTranslation();
   const { token } = theme.useToken();
+
   const isDarkMode = (() => {
     const color = token.colorBgBase?.toLowerCase() || "";
     return (
@@ -83,14 +85,16 @@ export default function RecruitmentDetail() {
           height: "70vh",
         }}
       >
-        <Spin size="large" />
+        <Spin size="large" tip={t("recruitmentDetail.loading")}>
+          <div style={{ width: 0, height: 0 }} />
+        </Spin>
       </div>
     );
 
   if (!recruitment)
     return (
       <div style={{ textAlign: "center", marginTop: 80 }}>
-        <Title level={4}>Không tìm thấy tin tuyển dụng.</Title>
+        <Title level={4}>{t("recruitmentDetail.notFound")}</Title>
       </div>
     );
 
@@ -118,7 +122,9 @@ export default function RecruitmentDetail() {
           color={isExpired ? "red" : "green"}
           style={{ fontWeight: 600, marginBottom: 16 }}
         >
-          {isExpired ? "Hết hạn" : "Đang tuyển"}
+          {isExpired
+            ? t("recruitmentDetail.expired")
+            : t("recruitmentDetail.active")}
         </Tag>
 
         <div style={{ marginTop: 16 }}>
@@ -128,7 +134,7 @@ export default function RecruitmentDetail() {
             )}`}
           >
             <Button type="primary" size="large">
-              Ứng tuyển ngay
+              {t("recruitmentDetail.applyNow")}
             </Button>
           </Link>
         </div>
@@ -154,17 +160,17 @@ export default function RecruitmentDetail() {
       <Row gutter={[24, 24]} style={{ marginTop: 16 }}>
         <Col xs={24} md={16}>
           <InfoSection
-            title="Mô tả công việc"
+            title={t("recruitmentDetail.jobDescription")}
             items={recruitment.description}
             color={token.colorPrimary}
           />
           <InfoSection
-            title="Yêu cầu ứng viên"
+            title={t("recruitmentDetail.requirements")}
             items={recruitment.requirements}
             color={token.colorPrimary}
           />
           <InfoSection
-            title="Quyền lợi"
+            title={t("recruitmentDetail.benefits")}
             items={recruitment.benefits}
             color={token.colorPrimary}
           />
@@ -175,22 +181,30 @@ export default function RecruitmentDetail() {
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
               <InfoItem
                 icon={<DollarSign size={18} />}
-                label="Mức lương"
-                value={recruitment.salary || "Chưa cập nhật"}
+                label={t("recruitmentDetail.salary")}
+                value={recruitment.salary || t("recruitmentDetail.notUpdated")}
               />
               <InfoItem
                 icon={<MapPin size={18} />}
-                label="Địa điểm"
-                value={recruitment.location || "Chưa cập nhật"}
+                label={t("recruitmentDetail.location")}
+                value={
+                  recruitment.location || t("recruitmentDetail.notUpdated")
+                }
               />
               <InfoItem
                 icon={<Briefcase size={18} />}
-                label="Kinh nghiệm"
-                value={`${recruitment.experience || 0} năm`}
+                label={t("recruitmentDetail.experience")}
+                value={
+                  recruitment.experience
+                    ? t("recruitmentDetail.years", {
+                        count: recruitment.experience,
+                      })
+                    : t("recruitmentDetail.notUpdated")
+                }
               />
               <InfoItem
                 icon={<Calendar size={18} />}
-                label="Hạn nộp hồ sơ"
+                label={t("recruitmentDetail.deadline")}
                 value={dayjs(recruitment.deadline).format("DD-MM-YYYY")}
               />
             </Space>
@@ -198,16 +212,16 @@ export default function RecruitmentDetail() {
 
           <Card variant="borderless" style={{ marginTop: 24 }}>
             <Title level={4} style={{ color: token.colorPrimary }}>
-              Thông tin liên hệ
+              {t("recruitmentDetail.contactInfo")}
             </Title>
             <Space direction="vertical" size="middle" style={{ width: "100%" }}>
               <ContactItem
                 icon={<Mail size={18} />}
-                value={recruitment.email || "Chưa cập nhật"}
+                value={recruitment.email || t("recruitmentDetail.notUpdated")}
               />
               <ContactItem
                 icon={<Phone size={18} />}
-                value={recruitment.phone || "Chưa cập nhật"}
+                value={recruitment.phone || t("recruitmentDetail.notUpdated")}
               />
             </Space>
           </Card>
@@ -218,7 +232,6 @@ export default function RecruitmentDetail() {
 }
 
 /* ---------- Sub Components ---------- */
-
 function InfoItem({
   icon,
   label,

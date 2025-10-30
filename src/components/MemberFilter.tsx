@@ -9,13 +9,13 @@ import {
   Col,
   Space,
   Tooltip,
-  // theme,
 } from "antd";
 import {
   SearchOutlined,
   ReloadOutlined,
   FilterOutlined,
 } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 import type { FC } from "react";
 
 type MemberFilterProps = {
@@ -33,15 +33,17 @@ const MemberFilter: FC<MemberFilterProps> = ({
   onChange,
   onReset,
 }) => {
-  // const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <>
       {/* === Tìm kiếm nhanh và nút lọc / đặt lại === */}
       <Space wrap>
         <Input
-          placeholder="Nhập tên thành viên"
+          placeholder={t("memberFilter.searchPlaceholder", {
+            defaultValue: "Nhập tên thành viên",
+          })}
           prefix={<SearchOutlined />}
           value={filters.search}
           onChange={(e) => onChange({ search: e.target.value })}
@@ -49,27 +51,22 @@ const MemberFilter: FC<MemberFilterProps> = ({
           style={{ width: 200 }}
         />
 
-        <Tooltip title="Lọc nâng cao">
+        <Tooltip title={t("memberFilter.advancedFilter", { defaultValue: "Lọc nâng cao" })}>
           <Button
             type="default"
             icon={<FilterOutlined />}
             onClick={() => setOpen(true)}
-          ></Button>
+          />
         </Tooltip>
 
-        <Tooltip title="Đặt lại bộ lọc">
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={onReset}
-            type="default"
-            // style={{ color: token.colorPrimary }}
-          />
+        <Tooltip title={t("memberFilter.resetFilter", { defaultValue: "Đặt lại bộ lọc" })}>
+          <Button icon={<ReloadOutlined />} onClick={onReset} type="default" />
         </Tooltip>
       </Space>
 
       {/* === Drawer chỉ chứa bộ lọc nâng cao === */}
       <Drawer
-        title="Bộ lọc nâng cao"
+        title={t("memberFilter.drawerTitle", { defaultValue: "Bộ lọc nâng cao" })}
         placement="right"
         width={window.innerWidth < 768 ? "100%" : 400}
         onClose={() => setOpen(false)}
@@ -80,10 +77,10 @@ const MemberFilter: FC<MemberFilterProps> = ({
         footer={
           <div style={{ textAlign: "right" }}>
             <Button onClick={() => setOpen(false)} style={{ marginRight: 8 }}>
-              Đóng
+              {t("memberFilter.close", { defaultValue: "Đóng" })}
             </Button>
             <Button type="primary" onClick={() => setOpen(false)}>
-              Áp dụng
+              {t("memberFilter.apply", { defaultValue: "Áp dụng" })}
             </Button>
           </div>
         }
@@ -91,25 +88,29 @@ const MemberFilter: FC<MemberFilterProps> = ({
         <Form layout="vertical">
           <Row gutter={[12, 12]}>
             <Col span={24}>
-              <Form.Item label="Hình thức làm việc">
+              <Form.Item
+                label={t("memberFilter.workTypeLabel", { defaultValue: "Hình thức làm việc" })}
+              >
                 <Select
-                  placeholder="Chọn hình thức"
+                  placeholder={t("memberFilter.selectWorkType", {
+                    defaultValue: "Chọn hình thức",
+                  })}
                   value={filters.type || undefined}
                   onChange={(v) => onChange({ type: v || "" })}
                   allowClear
                   options={[
-                    { label: "Full Time", value: "fulltime" },
-                    { label: "Part Time", value: "parttime" },
-                    { label: "Intern", value: "intern" },
+                    { label: t("memberFilter.fulltime", { defaultValue: "Full Time" }), value: "fulltime" },
+                    { label: t("memberFilter.parttime", { defaultValue: "Part Time" }), value: "parttime" },
+                    { label: t("memberFilter.intern", { defaultValue: "Intern" }), value: "intern" },
                   ]}
                 />
               </Form.Item>
             </Col>
 
             <Col span={24}>
-              <Form.Item label="Công việc">
+              <Form.Item label={t("memberFilter.jobLabel", { defaultValue: "Công việc" })}>
                 <Select
-                  placeholder="Chọn công việc"
+                  placeholder={t("memberFilter.selectJob", { defaultValue: "Chọn công việc" })}
                   value={filters.jobType || undefined}
                   onChange={(v) => onChange({ jobType: v || "" })}
                   allowClear
@@ -128,9 +129,9 @@ const MemberFilter: FC<MemberFilterProps> = ({
             </Col>
 
             <Col span={24}>
-              <Form.Item label="Team">
+              <Form.Item label={t("memberFilter.teamLabel", { defaultValue: "Team" })}>
                 <Select
-                  placeholder="Chọn team"
+                  placeholder={t("memberFilter.selectTeam", { defaultValue: "Chọn team" })}
                   value={filters.teamId || undefined}
                   onChange={(v) => onChange({ teamId: v || "" })}
                   allowClear

@@ -14,6 +14,7 @@ import {
 } from "@ant-design/icons";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { ColumnsType } from "antd/es/table";
 import {
   useQuery,
@@ -29,6 +30,7 @@ import type { Management } from "~/types/Management";
 import useDebounce from "~/hooks/useDebounce";
 
 export default function TeamManagement() {
+  const { t } = useTranslation();
   const [msgApi, contextHolder] = message.useMessage();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -83,34 +85,32 @@ export default function TeamManagement() {
   });
 
   // MUTATIONS
-
   const addMutation = useMutation({
-    mutationFn: (values: { teamName: string }) =>
-      axios.post("/teams", values),
+    mutationFn: (values: { teamName: string }) => axios.post("/teams", values),
     onSuccess: () => {
-      msgApi.success("Thêm team thành công!");
+      msgApi.success(t("teamManagement.addSuccess"));
       queryClient.invalidateQueries({ queryKey: ["teams"] });
     },
-    onError: () => msgApi.error("Lỗi khi thêm team!"),
+    onError: () => msgApi.error(t("teamManagement.addError")),
   });
 
   const updateMutation = useMutation({
     mutationFn: (values: { id: string; teamName: string }) =>
       axios.put(`/teams/${values.id}`, { teamName: values.teamName }),
     onSuccess: () => {
-      msgApi.success("Cập nhật team thành công!");
+      msgApi.success(t("teamManagement.updateSuccess"));
       queryClient.invalidateQueries({ queryKey: ["teams"] });
     },
-    onError: () => msgApi.error("Lỗi khi cập nhật team!"),
+    onError: () => msgApi.error(t("teamManagement.updateError")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => axios.delete(`/teams/${id}`),
     onSuccess: () => {
-      msgApi.success("Xóa thành công!");
+      msgApi.success(t("teamManagement.deleteSuccess"));
       queryClient.invalidateQueries({ queryKey: ["teams"] });
     },
-    onError: () => msgApi.error("Có lỗi khi xóa!"),
+    onError: () => msgApi.error(t("teamManagement.deleteError")),
   });
 
   // HANDLERS
@@ -152,16 +152,21 @@ export default function TeamManagement() {
 
   // COLUMNS
   const columns: ColumnsType<Management> = [
-    { title: "Tên Team", dataIndex: "teamName", key: "teamName", width: 250 },
     {
-      title: "Số thành viên",
+      title: t("teamManagement.table.name"),
+      dataIndex: "teamName",
+      key: "teamName",
+      width: 250,
+    },
+    {
+      title: t("teamManagement.table.members"),
       dataIndex: "members",
       key: "members",
       width: 150,
       align: "center",
     },
     {
-      title: "Thao tác",
+      title: t("teamManagement.table.actions"),
       key: "action",
       width: 120,
       align: "center",
@@ -173,10 +178,10 @@ export default function TeamManagement() {
             onClick={() => handleEdit(record)}
           />
           <Popconfirm
-            title="Xóa team này?"
+            title={t("teamManagement.confirmDelete")}
             onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText={t("teamManagement.delete")}
+            cancelText={t("teamManagement.cancel")}
           >
             <Button type="text" icon={<DeleteOutlined />} danger />
           </Popconfirm>
@@ -189,7 +194,7 @@ export default function TeamManagement() {
   return (
     <>
       {contextHolder}
-      <Card title="Quản lý Team" variant="borderless">
+      <Card title={t("teamManagement.title")} variant="borderless">
         <Space
           style={{
             width: "100%",
@@ -218,7 +223,7 @@ export default function TeamManagement() {
               setIsModalOpen(true);
             }}
           >
-            Thêm Team
+            {t("teamManagement.add")}
           </Button>
         </Space>
 

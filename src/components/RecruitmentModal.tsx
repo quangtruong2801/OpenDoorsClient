@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Modal, Form, Input, InputNumber, DatePicker, Row, Col } from "antd";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 import type { Recruitment } from "../types/Recruitment";
 
 type Props = {
@@ -19,6 +20,7 @@ export default function AddRecruitmentModal({
   isEdit,
 }: Props) {
   const [form] = Form.useForm();
+  const { t } = useTranslation();
 
   // Khi mở modal: set lại giá trị ban đầu
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function AddRecruitmentModal({
         form.setFieldsValue({
           ...initialValues,
           deadline: initialValues.deadline
-            ? dayjs(initialValues.deadline) // nhận từ BE là Date, convert sang dayjs cho DatePicker
+            ? dayjs(initialValues.deadline)
             : null,
           description: initialValues.description?.join("\n"),
           requirements: initialValues.requirements?.join("\n"),
@@ -46,7 +48,7 @@ export default function AddRecruitmentModal({
 
       const payload: Omit<Recruitment, "id"> = {
         ...values,
-        deadline: values.deadline ? values.deadline.toDate() : null, // DatePicker -> Date object
+        deadline: values.deadline ? values.deadline.toDate() : null,
         description: values.description
           ? values.description
               .split("\n")
@@ -76,14 +78,22 @@ export default function AddRecruitmentModal({
 
   return (
     <Modal
-      title={isEdit ? "Chỉnh sửa tin tuyển dụng" : "Thêm tin tuyển dụng"}
+      title={
+        isEdit
+          ? t("recruitmentModal.editTitle", { defaultValue: "Chỉnh sửa tin tuyển dụng" })
+          : t("recruitmentModal.add", { defaultValue: "Thêm tin tuyển dụng" })
+      }
       open={open}
       onCancel={() => {
         form.resetFields();
         onCancel();
       }}
       onOk={handleOk}
-      okText={isEdit ? "Cập nhật" : "Thêm mới"}
+      okText={
+        isEdit
+          ? t("recruitmentModal.update", { defaultValue: "Cập nhật" })
+          : t("recruitmentModal.addNew", { defaultValue: "Thêm mới" })
+      }
       width={800}
       maskClosable={false}
     >
@@ -91,55 +101,56 @@ export default function AddRecruitmentModal({
         form={form}
         layout="vertical"
         initialValues={{
-          companyName: "Công ty cổ phần Công Nghệ và Truyền Thông Việt Nam (VNTT)",
+          companyName:
+            "Công ty cổ phần Công Nghệ và Truyền Thông Việt Nam (VNTT)",
         }}
       >
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
               name="title"
-              label="Tiêu đề"
-              rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
+              label={t("recruitmentModal.position", { defaultValue: "Tiêu đề" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredTitle", { defaultValue: "Vui lòng nhập tiêu đề" }) }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
               name="companyName"
-              label="Công ty"
-              rules={[{ required: true, message: "Vui lòng nhập tên công ty" }]}
+              label={t("recruitmentModal.company", { defaultValue: "Công ty" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredCompany", { defaultValue: "Vui lòng nhập tên công ty" }) }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
               name="salary"
-              label="Mức lương"
-              rules={[{ required: true, message: "Vui lòng nhập mức lương" }]}
+              label={t("recruitmentModal.salary", { defaultValue: "Mức lương" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredSalary", { defaultValue: "Vui lòng nhập mức lương" }) }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
               name="location"
-              label="Địa điểm"
-              rules={[{ required: true, message: "Vui lòng nhập địa điểm" }]}
+              label={t("recruitmentModal.location", { defaultValue: "Địa điểm" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredLocation", { defaultValue: "Vui lòng nhập địa điểm" }) }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
               name="experience"
-              label="Kinh nghiệm (năm)"
-              rules={[{ required: true, message: "Vui lòng nhập kinh nghiệm" }]}
+              label={t("recruitmentModal.experience", { defaultValue: "Kinh nghiệm (năm)" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredExperience", { defaultValue: "Vui lòng nhập kinh nghiệm" }) }]}
             >
               <InputNumber min={0} style={{ width: "100%" }} />
             </Form.Item>
 
             <Form.Item
               name="deadline"
-              label="Hạn nộp hồ sơ"
-              rules={[{ required: true, message: "Vui lòng chọn hạn nộp" }]}
+              label={t("recruitmentModal.deadline", { defaultValue: "Hạn nộp hồ sơ" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredDeadline", { defaultValue: "Vui lòng chọn hạn nộp" }) }]}
             >
               <DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
             </Form.Item>
@@ -148,26 +159,24 @@ export default function AddRecruitmentModal({
           <Col xs={24} sm={12}>
             <Form.Item
               name="description"
-              label="Mô tả công việc"
-              rules={[
-                { required: true, message: "Vui lòng nhập mô tả công việc" },
-              ]}
+              label={t("recruitmentModal.description", { defaultValue: "Mô tả công việc" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredDescription", { defaultValue: "Vui lòng nhập mô tả công việc" }) }]}
             >
               <Input.TextArea rows={4} />
             </Form.Item>
 
             <Form.Item
               name="requirements"
-              label="Yêu cầu ứng viên"
-              rules={[{ required: true, message: "Vui lòng nhập yêu cầu" }]}
+              label={t("recruitmentModal.requirements", { defaultValue: "Yêu cầu ứng viên" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredRequirements", { defaultValue: "Vui lòng nhập yêu cầu" }) }]}
             >
               <Input.TextArea rows={4} />
             </Form.Item>
 
             <Form.Item
               name="benefits"
-              label="Quyền lợi"
-              rules={[{ required: true, message: "Vui lòng nhập quyền lợi" }]}
+              label={t("recruitmentModal.benefits", { defaultValue: "Quyền lợi" })}
+              rules={[{ required: true, message: t("recruitmentModal.requiredBenefits", { defaultValue: "Vui lòng nhập quyền lợi" }) }]}
             >
               <Input.TextArea rows={4} />
             </Form.Item>
